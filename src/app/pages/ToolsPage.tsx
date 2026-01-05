@@ -13,8 +13,10 @@ export default function ToolsPage() {
 
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
+  const campaignId = campaign.id;
+
   function log(title: string, body?: string, type: 'note' | 'roll' = 'roll') {
-    campaignActions.updateCampaign(campaign.id, (c) => ({
+    campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: Date.now(),
       journal: [{ id: uuid(), ts: Date.now(), type, title, body }, ...c.journal],

@@ -16,16 +16,12 @@ export default function RunPage() {
   const [trackName, setTrackName] = useState('');
   const [trackLength, setTrackLength] = useState(4);
 
-  // ✅ Guard early: nothing else should assume campaign exists
+  // ✅ Guard early
   if (!campaign) {
-    return (
-      <div className="page">
-        <p className="muted">No active campaign.</p>
-      </div>
-    );
+    return <div className="page"><p className="muted">No active campaign.</p></div>;
   }
 
-  // ✅ Capture stable values so TS is happy inside handlers
+  // ✅ Capture stable values for handlers
   const campaignId = campaign.id;
   const isLocked = campaign.locked;
 
@@ -40,11 +36,7 @@ export default function RunPage() {
 
   const tracks = useMemo(() => run?.tracks ?? [], [run?.tracks]);
 
-  function log(
-    title: string,
-    body?: string,
-    type: 'note' | 'roll' | 'disaster' | 'track' | 'state' = 'note'
-  ) {
+  function log(title: string, body?: string, type: 'note' | 'roll' | 'disaster' | 'track' | 'state' = 'note') {
     campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: now(),
@@ -54,7 +46,6 @@ export default function RunPage() {
 
   function startRun() {
     if (isLocked) return;
-
     campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: now(),
@@ -66,8 +57,6 @@ export default function RunPage() {
         tracks: [],
       },
     }));
-
-    // Use the current snapshot values safely (render-time)
     log('Run started', `Goal: ${run.goal ?? ''}\nPrize: ${run.prize ?? ''}`, 'state');
   }
 
@@ -89,13 +78,11 @@ export default function RunPage() {
 
   function rollDisaster() {
     if (isLocked) return;
-
     campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: now(),
       run: { ...c.run, disasterRolled: true },
     }));
-
     log('Disaster Roll', 'Disaster rolled. See Tables/Tools for detailed disaster tables.', 'disaster');
   }
 
@@ -112,14 +99,12 @@ export default function RunPage() {
       updatedAt: now(),
       run: { ...c.run, isActive: false },
     }));
-
     log('Run ended', undefined, 'state');
   }
 
   function spendBite() {
     if (isLocked) return;
 
-    // Use state-safe update (no dependency on render-time bite)
     campaignActions.updateCampaign(campaignId, (c) => {
       if (c.resources.bite <= 0) return c;
       return {
@@ -146,7 +131,6 @@ export default function RunPage() {
       updatedAt: now(),
       run: { ...c.run, tracks: [t, ...c.run.tracks] },
     }));
-
     log(`${type === 'progress' ? 'Progress' : 'Danger'} Track added`, `${t.name} (${t.ticks}/${t.length})`, 'track');
   }
 
@@ -172,7 +156,6 @@ export default function RunPage() {
       updatedAt: now(),
       run: { ...c.run, tracks: c.run.tracks.filter((x) => x.id !== id) },
     }));
-
     log('Track cleared', t.name, 'track');
   }
 
@@ -230,9 +213,7 @@ export default function RunPage() {
             End Run
           </button>
         </div>
-        {!disasterAlreadyRolled && (
-          <p className="muted small">If you end a run without rolling a disaster, you’ll be prompted.</p>
-        )}
+        {!disasterAlreadyRolled && <p className="muted small">If you end a run without rolling a disaster, you’ll be prompted.</p>}
       </section>
 
       <section className="card">
@@ -305,8 +286,6 @@ export default function RunPage() {
               onClick={() => {
                 rollDisaster();
                 setConfirmDisaster(false);
-
-                // End run after rolling disaster
                 campaignActions.updateCampaign(campaignId, (c) => ({
                   ...c,
                   updatedAt: now(),
@@ -330,9 +309,7 @@ export default function RunPage() {
             <h3>Add {trackModal.type === 'progress' ? 'Progress' : 'Danger'} Track</h3>
             <input className="input" placeholder="Track name" value={trackName} onChange={(e) => setTrackName(e.target.value)} />
             <div className="row">
-              <label className="muted small" style={{ alignSelf: 'center' }}>
-                Length
-              </label>
+              <label className="muted small" style={{ alignSelf: 'center' }}>Length</label>
               <input
                 className="input"
                 type="number"
@@ -346,9 +323,7 @@ export default function RunPage() {
               </button>
             </div>
             <div className="row" style={{ justifyContent: 'space-between' }}>
-              <button className="btnSecondary" onClick={() => setTrackModal(null)}>
-                Cancel
-              </button>
+              <button className="btnSecondary" onClick={() => setTrackModal(null)}>Cancel</button>
               <button
                 className="btn"
                 onClick={() => {

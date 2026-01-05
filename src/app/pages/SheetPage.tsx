@@ -6,8 +6,11 @@ export default function SheetPage() {
   const campaign = useActiveCampaign();
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
+  const campaignId = campaign.id;
+  const isLocked = campaign.locked;
+
   function updateChar(key: 'name' | 'pronouns' | 'look', value: string) {
-    campaignActions.updateCampaign(campaign.id, (c) => ({
+    campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: Date.now(),
       character: { ...c.character, [key]: value },
@@ -24,13 +27,31 @@ export default function SheetPage() {
       <section className="card">
         <h2>Identity</h2>
         <div className="row">
-          <input className="input" value={campaign.character.name} onChange={(e) => updateChar('name', e.target.value)} placeholder="Name" disabled={campaign.locked} />
+          <input
+            className="input"
+            value={campaign.character.name}
+            onChange={(e) => updateChar('name', e.target.value)}
+            placeholder="Name"
+            disabled={isLocked}
+          />
         </div>
         <div className="row">
-          <input className="input" value={campaign.character.pronouns ?? ''} onChange={(e) => updateChar('pronouns', e.target.value)} placeholder="Pronouns" disabled={campaign.locked} />
+          <input
+            className="input"
+            value={campaign.character.pronouns ?? ''}
+            onChange={(e) => updateChar('pronouns', e.target.value)}
+            placeholder="Pronouns"
+            disabled={isLocked}
+          />
         </div>
         <div className="row">
-          <input className="input" value={campaign.character.look ?? ''} onChange={(e) => updateChar('look', e.target.value)} placeholder="Look" disabled={campaign.locked} />
+          <input
+            className="input"
+            value={campaign.character.look ?? ''}
+            onChange={(e) => updateChar('look', e.target.value)}
+            placeholder="Look"
+            disabled={isLocked}
+          />
         </div>
       </section>
 
@@ -42,7 +63,7 @@ export default function SheetPage() {
 
       <section className="card">
         <h2>Status</h2>
-        <p className="muted small">Campaign: {campaign.locked ? 'Locked (Epilogue started)' : 'Active'}</p>
+        <p className="muted small">Campaign: {isLocked ? 'Locked (Epilogue started)' : 'Active'}</p>
         <p className="muted small">Run: {campaign.run.isActive ? 'Active' : 'Not active'} · Disaster rolled this run: {campaign.run.disasterRolled ? 'Yes' : 'No'}</p>
       </section>
     </div>

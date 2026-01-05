@@ -9,8 +9,10 @@ export default function EpiloguePage() {
 
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
+  const campaignId = campaign.id;
+
   function log(title: string, body?: string) {
-    campaignActions.updateCampaign(campaign.id, (c) => ({
+    campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: Date.now(),
       journal: [{ id: uuid(), ts: Date.now(), type: 'note', title, body }, ...c.journal],
@@ -18,7 +20,7 @@ export default function EpiloguePage() {
   }
 
   function startEpilogue() {
-    campaignActions.updateCampaign(campaign.id, (c) => ({ ...c, updatedAt: Date.now(), locked: true }));
+    campaignActions.updateCampaign(campaignId, (c) => ({ ...c, updatedAt: Date.now(), locked: true }));
     log('Epilogue started', 'Campaign locked. No further runs or downtime can be performed.');
     setConfirming(false);
   }

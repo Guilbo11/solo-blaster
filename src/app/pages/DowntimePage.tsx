@@ -8,8 +8,11 @@ export default function DowntimePage() {
   const campaign = useActiveCampaign();
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
+  const campaignId = campaign.id;
+  const isLocked = campaign.locked;
+
   function log(title: string, body?: string) {
-    campaignActions.updateCampaign(campaign.id, (c) => ({
+    campaignActions.updateCampaign(campaignId, (c) => ({
       ...c,
       updatedAt: Date.now(),
       journal: [{ id: uuid(), ts: Date.now(), type: 'note', title, body }, ...c.journal],
@@ -17,7 +20,7 @@ export default function DowntimePage() {
   }
 
   function applyBeat(beatId: string) {
-    if (campaign.locked) return;
+    if (isLocked) return;
     const beat = BEATS.find((b) => b.id === beatId);
     if (!beat) return;
     // V1: We journal the beat and let the player adjust resources manually via Resource Bar.
@@ -44,7 +47,7 @@ export default function DowntimePage() {
                 <div className="muted small">{b.effect}</div>
               </div>
               <div className="listItemActions">
-                <button className="btn" onClick={() => applyBeat(b.id)} disabled={campaign.locked}>Apply</button>
+                <button className="btn" onClick={() => applyBeat(b.id)} disabled={isLocked}>Apply</button>
               </div>
             </div>
           ))}
