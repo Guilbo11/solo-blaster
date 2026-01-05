@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { campaignActions, useCampaignStore } from '../../storage/useCampaignStore';
 
 export default function CampaignsPage() {
   const { campaigns } = useCampaignStore();
+  const navigate = useNavigate();
   const [name, setName] = useState('');
   const [importing, setImporting] = useState(false);
   const [importText, setImportText] = useState('');
@@ -97,7 +99,14 @@ export default function CampaignsPage() {
                   </div>
                 </div>
                 <div className="listItemActions">
-                  <button className="btn" onClick={() => campaignActions.setActiveCampaign(c.id)}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      campaignActions.setActiveCampaign(c.id);
+                      // After selecting a campaign, jump into the shell.
+                      navigate('/sheet');
+                    }}
+                  >
                     Open
                   </button>
                   <button
