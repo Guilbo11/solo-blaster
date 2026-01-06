@@ -28,6 +28,7 @@ jobs:
           node-version: 20
           cache: "npm"
 
+          cache-dependency-path: package-lock.json
       - name: Inspect npm config
         run: |
           node -v
@@ -41,10 +42,17 @@ jobs:
 
       - name: Install dependencies
         run: |
-          # If production=true is set somewhere (global/user/repo), remove it for this run.
+          npm config set fund false
+          npm config set audit false
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+
+          # Remove any "production=true" setting that would omit dev deps
           npm config delete production || true
-          # Make it explicit: include dev deps, omit optional deps.
-          npm ci --include=dev --omit=optional --no-audit --no-fund
+
+          # Install including dev deps (Vite types needed), omit optional deps (faster on CI)
+          npm ci --include=dev --omit=optional --no-audit --no-fund --prefer-offline --progress=false
 
       - name: Build
         run: npm run build
