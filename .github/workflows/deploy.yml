@@ -40,12 +40,11 @@ jobs:
           echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
 
       - name: Install dependencies
-        env:
-          # Ensure devDependencies are installed even if the runner sets production=true implicitly.
-          NPM_CONFIG_PRODUCTION: "false"
-          NODE_ENV: "development"
         run: |
-          npm ci --omit=optional --no-audit --no-fund
+          # If production=true is set somewhere (global/user/repo), remove it for this run.
+          npm config delete production || true
+          # Make it explicit: include dev deps, omit optional deps.
+          npm ci --include=dev --omit=optional --no-audit --no-fund
 
       - name: Build
         run: npm run build
