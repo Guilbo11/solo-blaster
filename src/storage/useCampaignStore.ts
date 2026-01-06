@@ -104,7 +104,7 @@ function normalizeCampaign(c: any): Campaign {
   const run = {
     isActive: false,
     disasterRolled: false,
-    tracks: [],
+    // tracks normalized below
     ...(c?.run ?? {}),
     tracks: Array.isArray(c?.run?.tracks) ? c.run.tracks : [],
   };
