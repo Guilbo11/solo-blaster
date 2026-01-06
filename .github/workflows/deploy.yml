@@ -51,8 +51,8 @@ jobs:
           # Remove any "production=true" setting that would omit dev deps
           npm config delete production || true
 
-          # Install including dev deps (Vite types needed), omit optional deps (faster on CI)
-          npm ci --include=dev --omit=optional --no-audit --no-fund --prefer-offline --progress=false
+          # Install including dev deps (Vite/TypeScript), keep optional deps (Rollup native binary is optional on npm but required at runtime)
+          npm ci --include=dev --no-audit --no-fund --prefer-offline --progress=false
 
       - name: Build
         run: npm run build
