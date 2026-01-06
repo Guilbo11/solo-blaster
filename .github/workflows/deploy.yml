@@ -28,17 +28,18 @@ jobs:
           node-version: 20
           cache: "npm"
 
-      - name: Inspect npm production config
+      - name: Inspect npm config
         run: |
           node -v
           npm -v
-          test -f .npmrc && (echo "---- .npmrc ----" && cat .npmrc) || echo "No .npmrc"
-          npm config get production
+          echo "---- repo .npmrc ----"
+          test -f .npmrc && cat .npmrc || echo "No .npmrc"
+          echo "npm config production (before):"
+          npm config get production || true
+          echo "NODE_ENV=$NODE_ENV"
+          echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
 
       - name: Install dependencies
-        env:
-          NODE_ENV: development
-          NPM_CONFIG_PRODUCTION: "false"
         run: |
           npm config set fund false
           npm config set audit false
@@ -46,6 +47,10 @@ jobs:
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
 
+          # Remove any "production=true" setting that would omit dev deps
+          npm config delete production || true
+
+          # Install including dev deps (Vite types needed), omit optional deps (faster on CI)
           npm ci --include=dev --omit=optional --no-audit --no-fund
 
       - name: Build
