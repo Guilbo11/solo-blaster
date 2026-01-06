@@ -60,13 +60,31 @@ export interface Character {
 }
 
 export interface Resources {
-  attitude: number;
-  turbo: number;
+  // Attitude is a kit with two separate resources.
+  attitudeBoost: number;
+  attitudeKick: number;
+
+  // Turbo is also two separate resources. Boost affects dice pools.
+  // Turbo can be increased later via mods.
+  turboBoost: number;
+  turboKick: number;
+
   bite: number;
   trouble: number;
   style: number;
+  // Counts (named items are stored in epilogue below)
   doom: number;
   legacy: number;
+}
+
+export interface EpilogueItem {
+  id: UUID;
+  name: string;
+}
+
+export interface EpilogueState {
+  legacies: EpilogueItem[];
+  dooms: EpilogueItem[];
 }
 
 export interface RunState {
@@ -88,5 +106,8 @@ export interface Campaign {
   character: Character;
   resources: Resources;
   run: RunState;
+  // Rich journal HTML (TOR-style) + legacy list kept for backwards compat.
+  journalHtml?: string;
   journal: JournalEntry[];
+  epilogue?: EpilogueState;
 }

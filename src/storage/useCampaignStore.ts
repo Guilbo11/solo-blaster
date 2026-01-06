@@ -13,8 +13,10 @@ type Listener = () => void;
 
 function defaultResources(): Resources {
   return {
-    attitude: 0,
-    turbo: 0,
+    attitudeBoost: 2,
+    attitudeKick: 2,
+    turboBoost: 2,
+    turboKick: 2,
     bite: 0,
     trouble: 0,
     style: 0,
@@ -54,7 +56,9 @@ function makeCampaign(name: string): Campaign {
   },
     resources: defaultResources(),
     run: { isActive: false, disasterRolled: false, tracks: [] },
+    journalHtml: '',
     journal: [],
+    epilogue: { legacies: [], dooms: [] },
   };
 }
 
@@ -85,7 +89,17 @@ function defaultCharacter() {
 
 function normalizeCampaign(c: any): Campaign {
   const now = Date.now();
-  const resources = { ...defaultResources(), ...(c?.resources ?? {}) };
+  // Backwards compat: older builds stored attitude/turbo as a single number.
+  const rawResources = { ...(c?.resources ?? {}) };
+  const resources = { ...defaultResources(), ...rawResources };
+  // If legacy "attitude" exists, map it to boost (keep kick default).
+  if (typeof rawResources.attitude === 'number') {
+    resources.attitudeBoost = rawResources.attitude;
+  }
+  // If legacy "turbo" exists, map it to boost (keep kick default).
+  if (typeof rawResources.turbo === 'number') {
+    resources.turboBoost = rawResources.turbo;
+  }
 
   const baseChar = defaultCharacter();
   const rawChar = c?.character ?? {};
@@ -109,6 +123,15 @@ function normalizeCampaign(c: any): Campaign {
     tracks: Array.isArray(c?.run?.tracks) ? c.run.tracks : [],
   };
 
+  const epilogue = {
+    legacies: Array.isArray(c?.epilogue?.legacies) ? c.epilogue.legacies : [],
+    dooms: Array.isArray(c?.epilogue?.dooms) ? c.epilogue.dooms : [],
+  };
+
+  // Keep counts in sync with named lists if present.
+  resources.doom = epilogue.dooms.length || resources.doom || 0;
+  resources.legacy = epilogue.legacies.length || resources.legacy || 0;
+
   return {
     id: c?.id ?? uuid(),
     name: c?.name ?? 'Campaign',
@@ -118,7 +141,9 @@ function normalizeCampaign(c: any): Campaign {
     character,
     resources,
     run,
+    journalHtml: typeof c?.journalHtml === 'string' ? c.journalHtml : '',
     journal: Array.isArray(c?.journal) ? c.journal : [],
+    epilogue,
   };
 }
 function loadState(): State {

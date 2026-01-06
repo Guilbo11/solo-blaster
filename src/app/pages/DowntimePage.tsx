@@ -25,7 +25,7 @@ export default function DowntimePage() {
     if (!beat) return;
     // V1: We journal the beat and let the player adjust resources manually via Resource Bar.
     log(`Beat: ${beat.name}`, `${beat.effect}${beat.cost ? `\nCost: ${beat.cost}` : ''}`);
-    alert('Beat applied (logged). Adjust any resources manually using the Resource Bar.');
+    window.dispatchEvent(new CustomEvent('solo:toast', { detail: { message: 'Beat logged to journal', durationMs: 4000 } }));
   }
 
   return (
@@ -43,7 +43,17 @@ export default function DowntimePage() {
           {BEATS.map((b) => (
             <div key={b.id} className="listItem">
               <div className="listItemMain">
-                <div className="listItemTitle">{b.name}</div>
+                <div className="listItemTitle" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+                  <span>{b.name}</span>
+                  <button
+                    className="toolBtn"
+                    type="button"
+                    title="Info"
+                    onClick={() => alert(`${b.name}\n\n${b.effect}${b.cost ? `\n\nCost: ${b.cost}` : ''}`)}
+                  >
+                    i
+                  </button>
+                </div>
                 <div className="muted small">{b.effect}</div>
               </div>
               <div className="listItemActions">

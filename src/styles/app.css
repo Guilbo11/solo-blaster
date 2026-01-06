@@ -378,3 +378,67 @@ body{
 .btnSecondary{
   box-shadow: 0 6px 0 rgba(0,0,0,0.06);
 }
+
+/* Landing spacing */
+.page.landing{
+  padding: 18px 10px;
+}
+
+/* Sticky resources */
+.resourceBar{
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  background: var(--panel);
+  border-bottom: 1px solid var(--line);
+  backdrop-filter: blur(10px);
+}
+
+.resourceBarInner{ max-width: 980px; margin: 0 auto; padding: 10px 12px; }
+
+.resourceBarTop{ display:flex; justify-content: space-between; align-items: center; gap: 10px; }
+.resourceBarTitle{ font-family: var(--font-title); font-size: 18px; letter-spacing: 0.4px; }
+
+.resourceBarChips{ display:flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+
+.chip{
+  display:flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--softLine);
+  background: rgba(255,255,255,0.65);
+  box-shadow: var(--shadowSoft);
+  font-weight: 600;
+}
+.chip:disabled{ opacity: 0.6; }
+.chipValue{ font-family: var(--font-title); letter-spacing: 0.3px; }
+
+.checkRow{ display:flex; flex-wrap: wrap; gap: 6px; }
+.checkPill{ display:flex; align-items:center; }
+.checkPill input{ width: 18px; height: 18px; }
+
+.trackChecks{ display:flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+
+/* Journal toolbar/editor */
+.toolbar{ display:flex; gap: 6px; align-items:center; flex-wrap: wrap; margin-bottom: 10px; }
+.toolBtn{ border: 1px solid var(--softLine); background: rgba(255,255,255,0.7); border-radius: 10px; padding: 6px 8px; }
+.toolBtn:disabled{ opacity: 0.6; }
+.toolSep{ width: 1px; height: 20px; background: var(--softLine); margin: 0 4px; }
+.journalEditor{ min-height: 320px; border: 1px solid var(--softLine); border-radius: 14px; padding: 10px; background: rgba(255,255,255,0.7); }
+
+/* Floating actions */
+.floatingActions{ position: fixed; right: 14px; bottom: 90px; display:flex; flex-direction: column; gap: 10px; z-index: 80; }
+.fab{ width: 52px; height: 52px; border-radius: 18px; border: 1px solid var(--line); background: rgba(255,255,255,0.85); box-shadow: var(--shadowCard); font-size: 20px; }
+.fab:disabled{ opacity: 0.5; }
+
+/* Side panel */
+.sidePanelBackdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 90; }
+.sidePanel{ position: fixed; top: 0; right: 0; height: 100vh; width: min(420px, 92vw); background: var(--panelSolid); border-left: 1px solid var(--line); box-shadow: var(--shadowCard); z-index: 91; padding: 12px; overflow: auto; }
+.sidePanelHeader{ display:flex; justify-content: space-between; align-items:center; gap: 10px; }
+.collapseBlock{ border: 1px solid var(--softLine); border-radius: 14px; padding: 10px; margin-top: 10px; }
+.collapseTitle{ font-family: var(--font-title); font-size: 18px; display:flex; justify-content: space-between; align-items:center; cursor:pointer; }
+
+/* Toast */
+.toast{ position: fixed; left: 50%; transform: translateX(-50%); bottom: 78px; background: rgba(16,17,20,0.92); color: white; padding: 10px 12px; border-radius: 999px; z-index: 200; max-width: 90vw; text-align: center; }

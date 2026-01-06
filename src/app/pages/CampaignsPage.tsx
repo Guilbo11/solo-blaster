@@ -11,7 +11,7 @@ export default function CampaignsPage() {
   const [error, setError] = useState<string | null>(null);
 
   return (
-    <div className="page">
+    <div className="page landing">
       <header className="pageHeader">
         <h1>Solo Blaster</h1>
         <p className="muted">Solo campaign manager for Slugblaster (Loner mode).</p>

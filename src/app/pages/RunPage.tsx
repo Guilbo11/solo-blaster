@@ -255,17 +255,31 @@ export default function RunPage() {
                   <div className="listItemTitle">
                     {t.type === 'progress' ? 'Progress' : 'Danger'}: {t.name}
                   </div>
-                  <div className="muted small">
+                  <div className="trackChecks">
+                    {Array.from({ length: t.length }).map((_, idx) => {
+                      const checked = idx < t.ticks;
+                      return (
+                        <label key={idx} className="checkPill">
+                          <input
+                            type="checkbox"
+                            checked={checked}
+                            onChange={() => {
+                              if (!canAdd) return;
+                              // Click toggles that slot; sets ticks accordingly.
+                              const nextTicks = checked ? idx : idx + 1;
+                              tickTrack(t.id, nextTicks - t.ticks);
+                            }}
+                            disabled={!canAdd}
+                          />
+                        </label>
+                      );
+                    })}
+                  </div>
+                  <div className="muted small" style={{ marginTop: 6 }}>
                     {t.ticks} / {t.length}
                   </div>
                 </div>
                 <div className="listItemActions">
-                  <button className="btnSecondary" onClick={() => tickTrack(t.id, -1)} disabled={!canAdd || t.ticks <= 0}>
-                    -
-                  </button>
-                  <button className="btnSecondary" onClick={() => tickTrack(t.id, 1)} disabled={!canAdd || t.ticks >= t.length}>
-                    +
-                  </button>
                   <button className="btnSecondary" onClick={() => clearTrack(t.id)} disabled={t.ticks < t.length}>
                     Clear
                   </button>

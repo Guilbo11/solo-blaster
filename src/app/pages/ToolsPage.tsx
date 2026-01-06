@@ -27,8 +27,10 @@ export default function ToolsPage() {
     const r = rollTable(selectedTable);
     if (!r) return;
     const t = TABLES.find((x) => x.id === selectedTable);
-    log(`Rolled: ${t?.name ?? selectedTable}`, r.value);
-    alert(r.value);
+    const title = `Rolled: ${t?.name ?? selectedTable}`;
+    log(title, r.value);
+    window.dispatchEvent(new CustomEvent('solo:toast', { detail: { message: r.value, durationMs: 4000 } }));
+    window.dispatchEvent(new CustomEvent('solo:journal-insert-html', { detail: { campaignId, html: `<b>${title}</b><br/>${r.value}` } }));
   }
 
   return (
