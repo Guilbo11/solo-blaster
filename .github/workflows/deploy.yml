@@ -17,21 +17,43 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    timeout-minutes: 12
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node (with npm cache)
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: "npm"
+
           cache-dependency-path: package-lock.json
+      - name: Inspect npm config
+        run: |
+          node -v
+          npm -v
+          echo "---- repo .npmrc ----"
+          test -f .npmrc && cat .npmrc || echo "No .npmrc"
+          echo "npm config production (before):"
+          npm config get production || true
+          echo "NODE_ENV=$NODE_ENV"
+          echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
 
       - name: Install dependencies
         run: |
-          # Keep it permissive like your working version, but faster via cache
-          npm install --no-audit --no-fund --prefer-offline
+          npm config set fund false
+          npm config set audit false
+          npm config set fetch-retries 5
+          npm config set fetch-retry-mintimeout 20000
+          npm config set fetch-retry-maxtimeout 120000
+
+          # Remove any "production=true" setting that would omit dev deps
+          npm config delete production || true
+
+          # Install including dev deps (Vite/TypeScript), keep optional deps (Rollup native binary is optional on npm but required at runtime)
+          # NOTE: We use npm install (not npm ci) so the workflow doesn't fail if package-lock.json lags behind package.json.
+          npm install --include=dev --no-audit --no-fund --prefer-offline --progress=false
 
       - name: Build
         run: npm run build
@@ -44,6 +66,7 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
