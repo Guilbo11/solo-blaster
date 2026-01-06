@@ -31,13 +31,96 @@ function makeCampaign(name: string): Campaign {
     createdAt: now,
     updatedAt: now,
     locked: false,
-    character: { name: 'Unnamed Loner' },
+    character: {
+    created: false,
+    playbook: 'Loner',
+    name: 'Unnamed Loner',
+    pronouns: '',
+    look: '',
+    family: '',
+    vibes: '',
+    trait: '',
+    raygun: { a: '', b: '' },
+    hoverboard: { gripColor: '', gripCut: '', deckGraphic: '', boardType: '' },
+    personalGear: '',
+    otherGear: [],
+    signatureDevice: '',
+    signatureLooks: '',
+    startingMod: '',
+    hangouts: [],
+    factions: { fan: '', annoyed: '', family: '' },
+    portals: [],
+    hook: '',
+  },
     resources: defaultResources(),
     run: { isActive: false, disasterRolled: false, tracks: [] },
     journal: [],
   };
 }
 
+
+function defaultCharacter() {
+  return {
+    created: false,
+    playbook: 'Loner' as const,
+    name: 'Unnamed Loner',
+    pronouns: '',
+    look: '',
+    family: '',
+    vibes: '',
+    trait: '',
+    raygun: { a: '', b: '' },
+    hoverboard: { gripColor: '', gripCut: '', deckGraphic: '', boardType: '' },
+    personalGear: '',
+    otherGear: [] as string[],
+    signatureDevice: '',
+    signatureLooks: '',
+    startingMod: '',
+    hangouts: [] as string[],
+    factions: { fan: '', annoyed: '', family: '' },
+    portals: [] as { id: string; from: string; to: string }[],
+    hook: '',
+  };
+}
+
+function normalizeCampaign(c: any): Campaign {
+  const now = Date.now();
+  const resources = { ...defaultResources(), ...(c?.resources ?? {}) };
+
+  const baseChar = defaultCharacter();
+  const rawChar = c?.character ?? {};
+  const character = {
+    ...baseChar,
+    ...rawChar,
+    // normalize nested
+    raygun: { ...baseChar.raygun, ...(rawChar.raygun ?? {}) },
+    hoverboard: { ...baseChar.hoverboard, ...(rawChar.hoverboard ?? {}) },
+    factions: { ...baseChar.factions, ...(rawChar.factions ?? {}) },
+    portals: Array.isArray(rawChar.portals) ? rawChar.portals : baseChar.portals,
+    hangouts: Array.isArray(rawChar.hangouts) ? rawChar.hangouts : baseChar.hangouts,
+    otherGear: Array.isArray(rawChar.otherGear) ? rawChar.otherGear : baseChar.otherGear,
+  };
+
+  const run = {
+    isActive: false,
+    disasterRolled: false,
+    tracks: [],
+    ...(c?.run ?? {}),
+    tracks: Array.isArray(c?.run?.tracks) ? c.run.tracks : [],
+  };
+
+  return {
+    id: c?.id ?? uuid(),
+    name: c?.name ?? 'Campaign',
+    createdAt: typeof c?.createdAt === 'number' ? c.createdAt : now,
+    updatedAt: typeof c?.updatedAt === 'number' ? c.updatedAt : now,
+    locked: Boolean(c?.locked),
+    character,
+    resources,
+    run,
+    journal: Array.isArray(c?.journal) ? c.journal : [],
+  };
+}
 function loadState(): State {
   try {
     const raw = localStorage.getItem(STORAGE_KEY);
@@ -45,6 +128,11 @@ function loadState(): State {
     const parsed = JSON.parse(raw) as State;
     // light validation
     if (!Array.isArray(parsed.campaigns)) return { campaigns: [], activeCampaignId: null };
+    parsed.campaigns = parsed.campaigns.map(normalizeCampaign) as any;
+    // ensure activeCampaignId still exists
+    if (parsed.activeCampaignId && !parsed.campaigns.find((c:any)=>c.id===parsed.activeCampaignId)) {
+      parsed.activeCampaignId = parsed.campaigns[0]?.id ?? null;
+    }
     return parsed;
   } catch {
     return { campaigns: [], activeCampaignId: null };

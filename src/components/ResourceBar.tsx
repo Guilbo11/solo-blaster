@@ -16,6 +16,7 @@ export default function ResourceBar() {
 
   const campaign = getActiveCampaign();
   if (!campaign) return null;
+  if (!campaign) return null;
 
   // ✅ Capture stable values so TypeScript is happy inside handlers
   const campaignId = campaign.id;

@@ -7,6 +7,7 @@ import RunPage from './pages/RunPage';
 import DowntimePage from './pages/DowntimePage';
 import EpiloguePage from './pages/EpiloguePage';
 import ToolsPage from './pages/ToolsPage';
+import CharacterPage from './pages/CharacterPage';
 import BottomNav from '../components/BottomNav';
 import ResourceBar from '../components/ResourceBar';
 
@@ -34,6 +35,7 @@ export default function App() {
             ) : (
               <Routes>
                 <Route path="/sheet" element={<SheetPage />} />
+                <Route path="/character" element={<CharacterPage />} />
                 <Route path="/run" element={<RunPage />} />
                 <Route path="/downtime" element={<DowntimePage />} />
                 <Route path="/epilogue" element={<EpiloguePage />} />

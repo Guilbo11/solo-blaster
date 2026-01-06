@@ -10,12 +10,7 @@ export interface Track {
   ticks: number;
 }
 
-export type JournalEntryType =
-  | 'note'
-  | 'roll'
-  | 'disaster'
-  | 'track'
-  | 'state';
+export type JournalEntryType = 'note' | 'roll' | 'disaster' | 'track' | 'state';
 
 export interface JournalEntry {
   id: UUID;
@@ -26,10 +21,42 @@ export interface JournalEntry {
   data?: Record<string, unknown>;
 }
 
+export interface PortalLink {
+  id: UUID;
+  from: string;
+  to: string;
+}
+
 export interface Character {
+  created: boolean;
+  playbook: 'Loner';
+
   name: string;
-  pronouns?: string;
-  look?: string;
+  pronouns: string;
+
+  look: string;
+  family: string;
+  vibes: string;
+  trait: string;
+
+  // Starter kit
+  raygun: { a: string; b: string };
+  hoverboard: { gripColor: string; gripCut: string; deckGraphic: string; boardType: string };
+  personalGear: string;
+  otherGear: string[];
+
+  // Signature (kept for later expansion)
+  signatureDevice: string;
+  signatureLooks: string;
+  startingMod: string;
+
+  // Connections & map
+  hangouts: string[]; // should be 2
+  factions: { fan: string; annoyed: string; family: string };
+  portals: PortalLink[];
+
+  // Hook
+  hook: string;
 }
 
 export interface Resources {

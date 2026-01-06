@@ -3,6 +3,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const tabs = [
   { path: '/sheet', label: 'Sheet' },
+  { path: '/character', label: 'Character' },
   { path: '/run', label: 'Run' },
   { path: '/downtime', label: 'Downtime' },
   { path: '/epilogue', label: 'Epilogue' },

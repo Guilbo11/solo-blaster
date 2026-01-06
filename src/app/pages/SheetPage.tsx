@@ -1,10 +1,13 @@
 import React from 'react';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useActiveCampaign } from '../../storage/useActiveCampaign';
 import { campaignActions } from '../../storage/useCampaignStore';
 
 export default function SheetPage() {
   const campaign = useActiveCampaign();
+  const navigate = useNavigate();
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
+  if (!campaign.character.created) return <Navigate to="/character" replace />;
 
   const campaignId = campaign.id;
   const isLocked = campaign.locked;
@@ -20,8 +23,14 @@ export default function SheetPage() {
   return (
     <div className="page">
       <header className="pageHeader">
+        <div className="pageHeaderRow">
+          <div>
+
         <h1>Sheet</h1>
-        <p className="muted">Loner mode. No crew. No fractures.</p>
+            <p className="muted">Loner mode. No crew. No fractures.</p>
+          </div>
+          <button className="btnSecondary" onClick={() => navigate('/character')}>Edit Character</button>
+        </div>
       </header>
 
       <section className="card">
@@ -38,7 +47,7 @@ export default function SheetPage() {
         <div className="row">
           <input
             className="input"
-            value={campaign.character.pronouns ?? ''}
+            value={campaign.character.pronouns}
             onChange={(e) => updateChar('pronouns', e.target.value)}
             placeholder="Pronouns"
             disabled={isLocked}
@@ -47,7 +56,7 @@ export default function SheetPage() {
         <div className="row">
           <input
             className="input"
-            value={campaign.character.look ?? ''}
+            value={campaign.character.look}
             onChange={(e) => updateChar('look', e.target.value)}
             placeholder="Look"
             disabled={isLocked}

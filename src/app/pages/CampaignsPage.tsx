@@ -104,7 +104,7 @@ export default function CampaignsPage() {
                     onClick={() => {
                       campaignActions.setActiveCampaign(c.id);
                       // After selecting a campaign, jump into the shell.
-                      navigate('/sheet');
+                      navigate(c.character?.created ? '/sheet' : '/character');
                     }}
                   >
                     Open
