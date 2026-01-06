@@ -40,18 +40,12 @@ jobs:
           echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
 
       - name: Install dependencies
+        env:
+          # Ensure devDependencies are installed even if the runner sets production=true implicitly.
+          NPM_CONFIG_PRODUCTION: "false"
+          NODE_ENV: "development"
         run: |
-          npm config set fund false
-          npm config set audit false
-          npm config set fetch-retries 5
-          npm config set fetch-retry-mintimeout 20000
-          npm config set fetch-retry-maxtimeout 120000
-
-          # Remove any "production=true" setting that would omit dev deps
-          npm config delete production || true
-
-          # Install including dev deps (Vite types needed), omit optional deps (faster on CI)
-          npm ci --include=dev --omit=optional --no-audit --no-fund
+          npm ci --omit=optional --no-audit --no-fund
 
       - name: Build
         run: npm run build
