@@ -19,7 +19,7 @@ import {
 
 import { FACTIONS } from '../../compendiums/factions';
 import { OTHER_GEAR } from '../../compendiums/otherGear';
-import type { PortalLink } from '../types';
+import type { Campaign, Character, PortalLink } from '../types';
 
 function now() {
   return Date.now();
@@ -82,7 +82,7 @@ export default function CharacterPage() {
   const locked = campaign.locked;
   const ch = campaign.character;
 
-  function patch(patcher: (c: typeof campaign) => typeof campaign) {
+  function patch(patcher: (c: Campaign) => Campaign) {
     campaignActions.updateCampaign(campaignId, (prev) => {
       if (prev.locked) return prev;
       const next = patcher(prev);
@@ -90,7 +90,7 @@ export default function CharacterPage() {
     });
   }
 
-  function setChar<T extends keyof typeof ch>(key: T, value: (typeof ch)[T]) {
+  function setChar<T extends keyof Character>(key: T, value: Character[T]) {
     patch((prev) => ({ ...prev, character: { ...prev.character, [key]: value } }));
   }
 
