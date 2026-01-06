@@ -28,19 +28,24 @@ jobs:
           node-version: 20
           cache: "npm"
 
+      - name: Inspect npm production config
+        run: |
+          node -v
+          npm -v
+          test -f .npmrc && (echo "---- .npmrc ----" && cat .npmrc) || echo "No .npmrc"
+          npm config get production
+
       - name: Install dependencies
         env:
           NODE_ENV: development
           NPM_CONFIG_PRODUCTION: "false"
         run: |
-          node -v
-          npm -v
           npm config set fund false
           npm config set audit false
-          npm config set optional false
           npm config set fetch-retries 5
           npm config set fetch-retry-mintimeout 20000
           npm config set fetch-retry-maxtimeout 120000
+
           npm ci --include=dev --omit=optional --no-audit --no-fund
 
       - name: Build
