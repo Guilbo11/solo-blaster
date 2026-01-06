@@ -92,6 +92,7 @@ export default function ResourceBar() {
   return (
     <div className="resourceBar">
       <div className="resourceBarTop">
+        {/* Campaign label kept on its own line (as requested). */}
         <button className="linkBtn" onClick={openCampaignMenu} title="Campaign menu">
           {campaign.name}
         </button>
@@ -113,7 +114,8 @@ export default function ResourceBar() {
       </div>
 
       {panel && (
-        <div className="modalBackdrop" onClick={() => setPanel(null)}>
+        // Popup window: close ONLY via Close buttons (no backdrop click to close)
+        <div className="modalBackdrop">
           <div className="modal" onClick={(e) => e.stopPropagation()}>
             {panel.kind === 'menu' ? (
               <>
@@ -169,6 +171,9 @@ export default function ResourceBar() {
                 <div style={{ marginTop: 10 }}>
                   <CheckboxLine total={12} value={clamp(r.bite ?? 0, 0, 12)} onChange={(v) => setRes({ bite: v })} />
                 </div>
+                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+                  <button className="btn" onClick={() => setPanel(null)}>Close</button>
+                </div>
               </>
             ) : null}
 
@@ -192,6 +197,9 @@ export default function ResourceBar() {
                     maxLabel="Max 8"
                   />
                 </div>
+                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+                  <button className="btn" onClick={() => setPanel(null)}>Close</button>
+                </div>
               </>
             ) : null}
 
@@ -201,6 +209,9 @@ export default function ResourceBar() {
                 <div className="muted small">Max 10</div>
                 <div style={{ marginTop: 10 }}>
                   <CheckboxLine total={10} value={clamp(r.style ?? 0, 0, 10)} onChange={(v) => setRes({ style: v })} />
+                </div>
+                <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
+                  <button className="btn" onClick={() => setPanel(null)}>Close</button>
                 </div>
               </>
             ) : null}
@@ -233,11 +244,7 @@ export default function ResourceBar() {
               </>
             ) : null}
 
-            {panel.kind !== 'doom' && panel.kind !== 'legacy' && panel.kind !== 'menu' ? (
-              <div className="row" style={{ justifyContent: 'flex-end', marginTop: 14 }}>
-                <button className="btn" onClick={() => setPanel(null)}>Close</button>
-              </div>
-            ) : null}
+            {/* doom/legacy/menu already render close buttons; others handled inline */}
           </div>
         </div>
       )}

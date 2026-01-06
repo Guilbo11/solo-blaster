@@ -8,6 +8,8 @@ import { d6 } from '../../utils/dice';
 import {
   LOOK_WORDS,
   FAMILY_TABLE,
+  LONER_VIBES,
+  LONER_TRAITS,
   GRIP_COLOUR_TABLE,
   GRIP_CUT_TABLE,
   DECK_GRAPHIC_TABLE,
@@ -61,11 +63,52 @@ export default function CharacterPage() {
   const nav = useNavigate();
   const campaign = useActiveCampaign();
 
+  const [isCreatorOpen, setIsCreatorOpen] = useState(false);
+  const [family1, setFamily1] = useState('');
+  const [family2, setFamily2] = useState('');
+  const [look1, setLook1] = useState('');
+  const [look2, setLook2] = useState('');
+  const [look3, setLook3] = useState('');
+  const [vibes, setVibes] = useState<string[]>([]);
+  const [autodidact1, setAutodidact1] = useState('');
+  const [autodidact2, setAutodidact2] = useState('');
+
   const [portalFrom, setPortalFrom] = useState('');
   const [portalTo, setPortalTo] = useState('');
 
   const factions = useMemo(() => FACTIONS, []);
   const otherGear = useMemo(() => OTHER_GEAR, []);
+
+  const familyOptions = useMemo(() => {
+    const vals = FAMILY_TABLE.flatMap((r) => [r.left, r.right]).filter(Boolean);
+    return Array.from(new Set(vals)).sort();
+  }, []);
+
+  const openCreator = () => {
+    // hydrate modal local state from stored strings
+    const parts = (campaign?.character.family ?? '').split('/').map((s) => s.trim()).filter(Boolean);
+    setFamily1(parts[0] ?? '');
+    setFamily2(parts[1] ?? '');
+
+    const looks = (campaign?.character.look ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    setLook1(looks[0] ?? '');
+    setLook2(looks[1] ?? '');
+    setLook3(looks[2] ?? '');
+
+    const vb = (campaign?.character.vibes ?? '').split(',').map((s) => s.trim()).filter(Boolean);
+    setVibes(vb.length ? vb : ['', ''].filter(Boolean));
+
+    if ((campaign?.character.trait ?? '').startsWith('Autodidact:')) {
+      const rest = (campaign?.character.trait ?? '').replace('Autodidact:', '').trim();
+      const segs = rest.split(',').map((s) => s.trim());
+      setAutodidact1(segs[0] ?? '');
+      setAutodidact2(segs[1] ?? '');
+    } else {
+      setAutodidact1('');
+      setAutodidact2('');
+    }
+    setIsCreatorOpen(true);
+  };
 
   if (!campaign) {
     return (
@@ -81,6 +124,8 @@ export default function CharacterPage() {
   const campaignId = campaign.id;
   const locked = campaign.locked;
   const ch = campaign.character;
+
+  const lookOptions = useMemo(() => [...LOOK_WORDS].sort(), []);
 
   function patch(patcher: (c: Campaign) => Campaign) {
     campaignActions.updateCampaign(campaignId, (prev) => {
@@ -107,7 +152,9 @@ export default function CharacterPage() {
     const nextPronouns = ch.pronouns.trim() ? ch.pronouns : '';
 
     const look = pickUnique(LOOK_WORDS, 3).join(', ');
-    const family = pickLR(FAMILY_TABLE);
+    // Two family choices (stored as a single string for v1 compatibility)
+    const fam2 = pickUnique(familyOptions, 2);
+    const family = `${fam2[0] ?? ''} / ${fam2[1] ?? ''}`.trim();
 
     const gripColor = pickLR(GRIP_COLOUR_TABLE);
     const gripCut = pickLR(GRIP_CUT_TABLE);
@@ -139,7 +186,7 @@ export default function CharacterPage() {
         pronouns: nextPronouns,
         look,
         family,
-        vibes: prev.character.vibes || '',
+        vibes: prev.character.vibes || (LONER_VIBES[d6() - 1] ?? ''),
         trait: prev.character.trait || '',
         raygun: { ...prev.character.raygun, a: raygunA, b: raygunB },
         hoverboard: { gripColor, gripCut, deckGraphic, boardType },
@@ -170,9 +217,10 @@ export default function CharacterPage() {
   function finalize() {
     const missing: string[] = [];
     if (!ch.name.trim()) missing.push('Name');
-    if (!ch.pronouns.trim()) missing.push('Pronouns');
+    // Pronouns optional in this app variant.
     if (!ch.look.trim()) missing.push('Look');
-    if (!ch.family.trim()) missing.push('Family');
+    // Family is stored as "A / B"; require two picks.
+    if (!ch.family.includes('/') || ch.family.split('/').map((s) => s.trim()).filter(Boolean).length < 2) missing.push('Family (2 picks)');
     if (ch.otherGear.length !== 2) missing.push('Pick 2 Other Gear');
     if (ch.hangouts.length !== 2) missing.push('Pick 2 Hangouts');
     if (!ch.factions.fan || !ch.factions.annoyed || !ch.factions.family) missing.push('Factions (Fan/Annoyed/Family)');
@@ -198,136 +246,195 @@ export default function CharacterPage() {
       <header className="pageHeader stickerHeader">
         <div className="pageHeaderRow">
           <div>
-            <h1>Character Creation</h1>
-            <p className="muted">One scroll page. Loud choices. Clear UI.</p>
+            <h1>Character</h1>
+            <p className="muted">Your Loner character. Edit via the popup creator.</p>
           </div>
-          <button className="btn" onClick={randomAll} disabled={locked}>
-            🎲 Random all
-          </button>
+          <div className="row" style={{ gap: 8 }}>
+            <button className="btnSecondary" onClick={randomAll} disabled={locked}>🎲 Random all</button>
+            <button className="btn" onClick={openCreator} disabled={locked}>
+              {ch.created ? 'Edit' : 'Create'}
+            </button>
+          </div>
         </div>
       </header>
+
+      <section className="card cardLoud">
+        <h2>Name</h2>
+        <div className="muted">{ch.name || '—'}</div>
+      </section>
 
       <section className="card cardLoud">
         <h2>Playbook</h2>
         <div className="pillRow">
           <span className="pill pillAccent">Loner</span>
-          <span className="muted small">Solo mode. No crew management. No fractures.</span>
-        </div>
-      </section>
-
-      <section className="card cardLoud">
-        <h2>Identity</h2>
-        <div className="row">
-          <input className="input" placeholder="Name" value={ch.name} onChange={(e) => setChar('name', e.target.value)} disabled={locked} />
-          <input className="input" placeholder="Pronouns" value={ch.pronouns} onChange={(e) => setChar('pronouns', e.target.value)} disabled={locked} />
-        </div>
-
-        <div className="row">
-          <input className="input" placeholder="Look" value={ch.look} onChange={(e) => setChar('look', e.target.value)} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('look', pickUnique(LOOK_WORDS, 3).join(', '))} disabled={locked}>
-            🎲
-          </button>
-        </div>
-
-        <div className="row">
-          <input className="input" placeholder="Family" value={ch.family} onChange={(e) => setChar('family', e.target.value)} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('family', pickLR(FAMILY_TABLE))} disabled={locked}>
-            🎲
-          </button>
-        </div>
-
-        <div className="row">
-          <input className="input" placeholder="Vibes" value={ch.vibes} onChange={(e) => setChar('vibes', e.target.value)} disabled={locked} />
-        </div>
-
-        <div className="row">
-          <input className="input" placeholder="Trait" value={ch.trait} onChange={(e) => setChar('trait', e.target.value)} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('trait', 'One Step Ahead')} disabled={locked}>One Step Ahead</button>
-          <button className="btnSecondary" onClick={() => setChar('trait', 'Main Character Energy')} disabled={locked}>Main Character Energy</button>
-          <button className="btnSecondary" onClick={() => setChar('trait', 'Called Shot')} disabled={locked}>Called Shot</button>
         </div>
       </section>
 
       <section className="card">
-        <h2>Starter Kit</h2>
-
-        <div className="row">
-          <input className="input" placeholder="Raygun (A)" value={ch.raygun.a} onChange={(e) => setChar('raygun', { ...ch.raygun, a: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('raygun', { ...ch.raygun, a: RAYGUN_TYPES[Math.floor(Math.random() * RAYGUN_TYPES.length)] })} disabled={locked}>
-            🎲
-          </button>
-        </div>
-
-        <div className="row">
-          <input className="input" placeholder="Raygun (B)" value={ch.raygun.b} onChange={(e) => setChar('raygun', { ...ch.raygun, b: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('raygun', { ...ch.raygun, b: RAYGUN_TYPES[Math.floor(Math.random() * RAYGUN_TYPES.length)] })} disabled={locked}>
-            🎲
-          </button>
-        </div>
-
-        <div className="divider" />
-
-        <h3>Hoverboard</h3>
-        <div className="row">
-          <input className="input" placeholder="Grip colour" value={ch.hoverboard.gripColor} onChange={(e) => setChar('hoverboard', { ...ch.hoverboard, gripColor: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('hoverboard', { ...ch.hoverboard, gripColor: pickLR(GRIP_COLOUR_TABLE) })} disabled={locked}>🎲</button>
-        </div>
-        <div className="row">
-          <input className="input" placeholder="Grip cut" value={ch.hoverboard.gripCut} onChange={(e) => setChar('hoverboard', { ...ch.hoverboard, gripCut: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('hoverboard', { ...ch.hoverboard, gripCut: pickLR(GRIP_CUT_TABLE) })} disabled={locked}>🎲</button>
-        </div>
-        <div className="row">
-          <input className="input" placeholder="Deck graphic" value={ch.hoverboard.deckGraphic} onChange={(e) => setChar('hoverboard', { ...ch.hoverboard, deckGraphic: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => setChar('hoverboard', { ...ch.hoverboard, deckGraphic: pickLR(DECK_GRAPHIC_TABLE) })} disabled={locked}>🎲</button>
-        </div>
-        <div className="row">
-          <input className="input" placeholder="Board type" value={ch.hoverboard.boardType} onChange={(e) => setChar('hoverboard', { ...ch.hoverboard, boardType: e.target.value })} disabled={locked} />
-          <button className="btnSecondary" onClick={() => {
-            const rowBucket = d6() <= 2 ? 0 : d6() <= 4 ? 1 : 2;
-            const col = d6() - 1;
-            setChar('hoverboard', { ...ch.hoverboard, boardType: BOARD_TYPE_ROWS[rowBucket][col] });
-          }} disabled={locked}>🎲</button>
-        </div>
-
-        <div className="divider" />
-
-        <h3>Other Gear (pick 2)</h3>
-        <div className="pillRow">
-          {ch.otherGear.map((g) => (
-            <span key={g} className="pill">
-              {g}
-              <button className="pillX" onClick={() => setChar('otherGear', ch.otherGear.filter((x) => x !== g))} disabled={locked}>×</button>
-            </span>
-          ))}
-        </div>
-
-        <div className="list">
-          {otherGear.map((g) => {
-            const picked = ch.otherGear.includes(g.name);
-            const disabled = locked || (!picked && ch.otherGear.length >= 2);
-            return (
-              <div key={g.id} className="listItem">
-                <div className="listItemMain">
-                  <div className="listItemTitle">{g.name}</div>
-                  <div className="muted small">{g.description}</div>
-                </div>
-                <div className="listItemActions">
-                  <button
-                    className={picked ? 'btnSecondary' : 'btn'}
-                    disabled={disabled}
-                    onClick={() => {
-                      if (picked) setChar('otherGear', ch.otherGear.filter((x) => x !== g.name));
-                      else setChar('otherGear', [...ch.otherGear, g.name]);
-                    }}
-                  >
-                    {picked ? 'Remove' : 'Pick'}
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+        <h2>Basics</h2>
+        <div className="row" style={{ flexWrap: 'wrap', gap: 8 }}>
+          <div className="pill">Look: {ch.look || '—'}</div>
+          <div className="pill">Family: {ch.family || '—'}</div>
+          <div className="pill">Vibes: {ch.vibes || '—'}</div>
+          <div className="pill">Traits: {ch.trait || '—'}</div>
         </div>
       </section>
+
+      <section className="card">
+        <h2>Gear</h2>
+        <div className="muted">Raygun: {ch.raygun?.a || '—'}</div>
+        <div className="muted" style={{ marginTop: 6 }}>Other Gear: {ch.otherGear?.length ? ch.otherGear.join(', ') : '—'}</div>
+      </section>
+
+      <section className="card">
+        <h2>Finalize</h2>
+        <p className="muted small">Marks the character as created and returns to Sheet.</p>
+        <button className="btn" onClick={finalize} disabled={locked}>Confirm Character</button>
+      </section>
+
+      {isCreatorOpen && (
+        <div className="modalBackdrop">
+          <div className="modal modalTall" onClick={(e) => e.stopPropagation()}>
+            <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+              <h2 style={{ margin: 0 }}>Create Character</h2>
+              <button className="btn" onClick={() => setIsCreatorOpen(false)}>Close</button>
+            </div>
+
+            <div className="muted small" style={{ marginTop: 4 }}>Form is scrollable. Close only via the Close button.</div>
+
+            {/* Name */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Name</div>
+              <input className="input" value={ch.name} onChange={(e) => setChar('name', e.target.value)} disabled={locked} />
+            </div>
+
+            {/* Look */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Look (pick 3)</div>
+              {(() => {
+                const parts = ch.look.split(',').map((s) => s.trim()).filter(Boolean);
+                const p1 = parts[0] ?? '';
+                const p2 = parts[1] ?? '';
+                const p3 = parts[2] ?? '';
+                const setPart = (idx: number, val: string) => {
+                  const next = [p1, p2, p3];
+                  next[idx] = val;
+                  setChar('look', next.filter(Boolean).join(', '));
+                };
+                return (
+                  <>
+                    <div className="row" style={{ gap: 8, marginBottom: 8 }}>
+                      <select className="select" value={p1} onChange={(e) => setPart(0, e.target.value)} disabled={locked}>
+                        <option value="">Select…</option>
+                        {lookOptions.map((o) => (<option key={o} value={o}>{o}</option>))}
+                      </select>
+                      <button className="btnSecondary" onClick={() => setPart(0, lookOptions[Math.floor(Math.random() * lookOptions.length)])} disabled={locked}>🎲</button>
+                    </div>
+                    <div className="row" style={{ gap: 8, marginBottom: 8 }}>
+                      <select className="select" value={p2} onChange={(e) => setPart(1, e.target.value)} disabled={locked}>
+                        <option value="">Select…</option>
+                        {lookOptions.map((o) => (<option key={o} value={o}>{o}</option>))}
+                      </select>
+                      <button className="btnSecondary" onClick={() => setPart(1, lookOptions[Math.floor(Math.random() * lookOptions.length)])} disabled={locked}>🎲</button>
+                    </div>
+                    <div className="row" style={{ gap: 8 }}>
+                      <select className="select" value={p3} onChange={(e) => setPart(2, e.target.value)} disabled={locked}>
+                        <option value="">Select…</option>
+                        {lookOptions.map((o) => (<option key={o} value={o}>{o}</option>))}
+                      </select>
+                      <button className="btnSecondary" onClick={() => setPart(2, lookOptions[Math.floor(Math.random() * lookOptions.length)])} disabled={locked}>🎲</button>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* Family (2) */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Family (2 picks)</div>
+              {(() => {
+                const parts = ch.family.split('/').map((s) => s.trim());
+                const f1 = parts[0] ?? '';
+                const f2 = parts[1] ?? '';
+                const setFam = (a: string, b: string) => setChar('family', `${a} / ${b}`.trim());
+                return (
+                  <div className="row" style={{ gap: 8 }}>
+                    <select className="select" value={f1} onChange={(e) => setFam(e.target.value, f2)} disabled={locked}>
+                      <option value="">Select…</option>
+                      {familyOptions.map((o) => (<option key={o} value={o}>{o}</option>))}
+                    </select>
+                    <select className="select" value={f2} onChange={(e) => setFam(f1, e.target.value)} disabled={locked}>
+                      <option value="">Select…</option>
+                      {familyOptions.map((o) => (<option key={o} value={o}>{o}</option>))}
+                    </select>
+                  </div>
+                );
+              })()}
+            </div>
+
+            {/* Vibes */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Vibes</div>
+              <div className="row" style={{ gap: 8 }}>
+                <select className="select" value={ch.vibes} onChange={(e) => setChar('vibes', e.target.value)} disabled={locked}>
+                  <option value="">Select…</option>
+                  {LONER_VIBES.map((o) => (<option key={o} value={o}>{o}</option>))}
+                </select>
+                <button className="btnSecondary" onClick={() => setChar('vibes', LONER_VIBES[d6() - 1] ?? '')} disabled={locked}>🎲</button>
+              </div>
+            </div>
+
+            {/* Traits */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Traits (Loner)</div>
+              <div className="muted small" style={{ marginBottom: 8 }}>Pick one. Autodidact requires two custom fields.</div>
+              {LONER_TRAITS.map((t) => (
+                <div key={t.name} className="card" style={{ marginBottom: 10 }}>
+                  <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+                    <strong>{t.name}</strong>
+                    <button
+                      className="btnSecondary"
+                      onClick={() => {
+                        if (t.name === 'Autodidact') {
+                          const label = `Autodidact: ${autodidact1 || '______'} and ${autodidact2 || '______'}`;
+                          setChar('trait', label);
+                        } else {
+                          setChar('trait', t.name);
+                        }
+                      }}
+                      disabled={locked}
+                    >
+                      Select
+                    </button>
+                  </div>
+                  <div className="muted small" style={{ marginTop: 6 }}>{t.description}</div>
+                  {t.name === 'Autodidact' ? (
+                    <div style={{ marginTop: 10 }}>
+                      <div className="row" style={{ gap: 8 }}>
+                        <input className="input" placeholder="Field 1" value={autodidact1} onChange={(e) => setAutodidact1(e.target.value)} disabled={locked} />
+                        <input className="input" placeholder="Field 2" value={autodidact2} onChange={(e) => setAutodidact2(e.target.value)} disabled={locked} />
+                      </div>
+                    </div>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+
+            {/* Raygun */}
+            <div style={{ marginTop: 14 }}>
+              <div className="fieldLabel">Raygun</div>
+              <select className="select" value={ch.raygun?.a ?? ''} onChange={(e) => setChar('raygun', { a: e.target.value, b: '' })} disabled={locked}>
+                <option value="">Select…</option>
+                {RAYGUN_TYPES.map((o) => (<option key={o} value={o}>{o}</option>))}
+              </select>
+            </div>
+
+            <div className="row" style={{ justifyContent: 'flex-end', marginTop: 16 }}>
+              <button className="btn" onClick={() => setIsCreatorOpen(false)}>Close</button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <section className="card cardLoud">
         <h2>Hangouts (pick 2)</h2>

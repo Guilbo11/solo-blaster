@@ -21,6 +21,45 @@ export const FAMILY_TABLE: Array<{ left: string; right: string }> = [
   { left: 'relaxed', right: 'ultraterrestrial' },
 ];
 
+// Loner-specific vibes (Solo Blaster appendix).
+export const LONER_VIBES = [
+  'already has a smoking habit',
+  'brooding',
+  'odd one out in every crowd',
+  'monosyllabic',
+  'fixated on odd hobbies',
+  'not from around here',
+];
+
+export type LonerTraitDef = { name: string; description: string };
+
+// Loner traits (Solo Blaster appendix). Descriptions kept short for UI readability.
+export const LONER_TRAITS: LonerTraitDef[] = [
+  {
+    name: 'One Step Ahead',
+    description:
+      'Twice per run, flash back to how you prepared for this moment. Take +1d6 or +1 Kick to that action.',
+  },
+  {
+    name: 'Main Character Energy',
+    description: 'You get +1d6 to Disaster rolls and an additional Slam box.',
+  },
+  {
+    name: 'Called Shot',
+    description:
+      'You get +1d6 on solo Bite rolls. Also, when you roll on problem tables you can mark 1 Trouble to reroll and use either result.',
+  },
+  {
+    name: 'Pathfinder',
+    description: 'You roll +1d6 for In The Lab and Portal Discovery beats.',
+  },
+  {
+    name: 'Autodidact',
+    description:
+      'You taught yourself all about ______ and ______. If either would help with an action, you can mark 1 Trouble to upgrade a 1–3 to a 4–5.',
+  },
+];
+
 // Hoverboard tables: d6 for row, then 1–3 vs 4–6
 export const GRIP_COLOUR_TABLE: Array<{ left: string; right: string }> = [
   { left: 'classic black', right: 'classic black' },

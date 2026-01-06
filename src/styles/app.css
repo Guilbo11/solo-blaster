@@ -267,6 +267,10 @@ body{
   border: 1px solid #eee;
   box-shadow: 0 10px 30px rgba(0,0,0,0.18);
 }
+.modalTall{
+  max-height: 82vh;
+  overflow: auto;
+}
 .modal h3{ margin: 0 0 8px 0; }
 
 .details{ margin-top: 10px; }
