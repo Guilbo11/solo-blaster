@@ -28,88 +28,33 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
+          cache-dependency-path: package-lock.json
 
-      - name: Detect app directory (package.json containing Vite)
-        id: detect
-        shell: bash
+      - name: Install dependencies (FORCE dev deps even if runner is production/omit=dev)
+        # These env vars override global npm config on the runner.
+        env:
+          npm_config_production: "false"
+          npm_config_include: "dev"
+          # Critical: override any global "omit=dev" by explicitly setting omit to something else
+          npm_config_omit: "optional"
+          NODE_ENV: "development"
         run: |
-          APP_DIR="$(node - <<'NODE'
-          const fs = require('fs');
-          const path = require('path');
-
-          function hasVitePkgJson(dir) {
-            const p = path.join(dir, 'package.json');
-            if (!fs.existsSync(p)) return false;
-            try {
-              const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-              return Boolean(
-                (j.devDependencies && j.devDependencies.vite) ||
-                (j.dependencies && j.dependencies.vite)
-              );
-            } catch { return false; }
-          }
-
-          function walk(dir) {
-            if (dir.includes('node_modules') || dir.includes(path.sep + '.git')) return null;
-            if (hasVitePkgJson(dir)) return dir;
-
-            for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
-              if (!ent.isDirectory()) continue;
-              const name = ent.name;
-              if (name === 'node_modules' || name === '.git' || name === 'dist') continue;
-              const found = walk(path.join(dir, name));
-              if (found) return found;
-            }
-            return null;
-          }
-
-          const root = process.cwd();
-          const found = walk(root);
-          if (!found) process.exit(2);
-          process.stdout.write(found);
-          NODE
-          )"
-
-          if [ -z "$APP_DIR" ]; then
-            echo "Could not find a package.json that depends on vite."
-            exit 1
-          fi
-
-          echo "Detected APP_DIR=$APP_DIR"
-          echo "app_dir=$APP_DIR" >> "$GITHUB_OUTPUT"
-
-      - name: Show app directory contents
-        run: |
-          echo "APP_DIR=${{ steps.detect.outputs.app_dir }}"
-          ls -la "${{ steps.detect.outputs.app_dir }}"
-          echo "---- package.json ----"
-          cat "${{ steps.detect.outputs.app_dir }}/package.json"
-
-      - name: Force npm config (local .npmrc)
-        working-directory: ${{ steps.detect.outputs.app_dir }}
-        run: |
-          cat > .npmrc <<'EOF'
-          production=false
-          omit=
-          fund=false
-          audit=false
-          EOF
-
+          echo "npm version: $(npm -v)"
           echo "Effective npm config:"
-          npm -v
           npm config get production || true
           npm config get omit || true
+          npm config get include || true
 
-      - name: Install dependencies (force devDependencies)
-        working-directory: ${{ steps.detect.outputs.app_dir }}
-        run: |
-          npm ci --include=dev --no-audit --no-fund
+          # Deterministic install. With npm_config_omit=optional, dev deps WILL be installed.
+          npm ci --no-audit --no-fund
 
-          echo "node_modules/.bin (sample):"
-          ls -la node_modules/.bin | head -n 120
+          echo "Sanity check: node_modules exists?"
+          test -d node_modules || (echo "node_modules missing" && exit 1)
+
+          echo "Bins sample:"
+          ls -la node_modules/.bin | head -n 80
 
       - name: Verify tools (local only, no downloads)
-        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: |
           echo "Node: $(node -v)"
           echo "npm:  $(npm -v)"
@@ -120,14 +65,16 @@ jobs:
           echo "TypeScript (local):"
           ./node_modules/.bin/tsc --version
 
+          echo "Verify Vite is installed in node_modules:"
+          node -p "require('./node_modules/vite/package.json').version"
+
       - name: Build
-        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: npm run build
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ steps.detect.outputs.app_dir }}/dist
+          path: dist
 
   deploy:
     needs: build
