@@ -17,7 +17,6 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 30
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -26,23 +25,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: "npm"
-          # If you later add package-lock.json this file will be used for cache key
-          cache-dependency-path: package.json
 
       - name: Install dependencies
-        env:
-          NPM_CONFIG_PRODUCTION: "false"
-          npm_config_fetch_retries: "5"
-          npm_config_fetch_retry_mintimeout: "20000"
-          npm_config_fetch_retry_maxtimeout: "120000"
-        run: |
-          # Use npm ci when package-lock.json exists for reproducible + faster installs
-          if [ -f package-lock.json ]; then
-            npm ci --no-audit --no-fund
-          else
-            npm install --include=dev --no-audit --no-fund
-          fi
+        run: npm install
 
       - name: Build
         run: npm run build
@@ -55,7 +40,6 @@ jobs:
   deploy:
     needs: build
     runs-on: ubuntu-latest
-    timeout-minutes: 10
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
