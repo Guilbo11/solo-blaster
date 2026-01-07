@@ -30,8 +30,10 @@ jobs:
           cache: "npm"
 
       - name: Detect app directory (package.json containing Vite)
+        id: detect
+        shell: bash
         run: |
-          node - <<'NODE'
+          APP_DIR="$(node - <<'NODE'
           const fs = require('fs');
           const path = require('path');
 
@@ -40,14 +42,15 @@ jobs:
             if (!fs.existsSync(p)) return false;
             try {
               const j = JSON.parse(fs.readFileSync(p, 'utf8'));
-              return Boolean((j.devDependencies && j.devDependencies.vite) || (j.dependencies && j.dependencies.vite));
+              return Boolean(
+                (j.devDependencies && j.devDependencies.vite) ||
+                (j.dependencies && j.dependencies.vite)
+              );
             } catch { return false; }
           }
 
           function walk(dir) {
-            // Ignore node_modules and .git
             if (dir.includes('node_modules') || dir.includes(path.sep + '.git')) return null;
-
             if (hasVitePkgJson(dir)) return dir;
 
             for (const ent of fs.readdirSync(dir, { withFileTypes: true })) {
@@ -62,20 +65,28 @@ jobs:
 
           const root = process.cwd();
           const found = walk(root);
-          if (!found) {
-            console.error('Could not find a package.json that depends on vite.');
-            process.exit(1);
-          }
-          console.log('APP_DIR=' + found);
-          fs.appendFileSync(process.env.GITHUB_ENV, `APP_DIR=${found}\n`);
+          if (!found) process.exit(2);
+          process.stdout.write(found);
           NODE
+          )"
 
-          echo "Using APP_DIR=$APP_DIR"
-          ls -la "$APP_DIR"
-          cat "$APP_DIR/package.json"
+          if [ -z "$APP_DIR" ]; then
+            echo "Could not find a package.json that depends on vite."
+            exit 1
+          fi
 
-      - name: Force npm config (local)
-        working-directory: ${{ env.APP_DIR }}
+          echo "Detected APP_DIR=$APP_DIR"
+          echo "app_dir=$APP_DIR" >> "$GITHUB_OUTPUT"
+
+      - name: Show app directory contents
+        run: |
+          echo "APP_DIR=${{ steps.detect.outputs.app_dir }}"
+          ls -la "${{ steps.detect.outputs.app_dir }}"
+          echo "---- package.json ----"
+          cat "${{ steps.detect.outputs.app_dir }}/package.json"
+
+      - name: Force npm config (local .npmrc)
+        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: |
           cat > .npmrc <<'EOF'
           production=false
@@ -90,32 +101,33 @@ jobs:
           npm config get omit || true
 
       - name: Install dependencies (force devDependencies)
-        working-directory: ${{ env.APP_DIR }}
+        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: |
-          # Force dev deps even if runner has production=true somewhere
           npm ci --include=dev --no-audit --no-fund
 
           echo "node_modules/.bin (sample):"
           ls -la node_modules/.bin | head -n 120
 
       - name: Verify tools (local only, no downloads)
-        working-directory: ${{ env.APP_DIR }}
+        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: |
           echo "Node: $(node -v)"
           echo "npm:  $(npm -v)"
+
           echo "Vite (local):"
           ./node_modules/.bin/vite --version
+
           echo "TypeScript (local):"
           ./node_modules/.bin/tsc --version
 
       - name: Build
-        working-directory: ${{ env.APP_DIR }}
+        working-directory: ${{ steps.detect.outputs.app_dir }}
         run: npm run build
 
       - name: Upload GitHub Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
-          path: ${{ env.APP_DIR }}/dist
+          path: ${{ steps.detect.outputs.app_dir }}/dist
 
   deploy:
     needs: build
