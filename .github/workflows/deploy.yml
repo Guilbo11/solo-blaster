@@ -19,13 +19,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
-    # Force npm behavior at the environment level (stronger than hoping defaults work)
-    env:
-      NODE_ENV: development
-      NPM_CONFIG_PRODUCTION: "false"
-      NPM_CONFIG_INCLUDE: "dev"
-      NPM_CONFIG_OMIT: ""     # critical: neutralize omit=dev if set globally
-
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,29 +30,29 @@ jobs:
           cache: "npm"
           cache-dependency-path: package-lock.json
 
-      - name: Install dependencies (force devDependencies)
+      - name: Force npm config for CI (local .npmrc)
         run: |
-          echo "npm version:"
+          cat > .npmrc <<'EOF'
+          production=false
+          omit=
+          fund=false
+          audit=false
+          EOF
+
+          echo "---- .npmrc (CI) ----"
+          cat .npmrc
+
+          echo "---- npm config (effective) ----"
           npm -v
-
-          echo "npm config before cleanup:"
           npm config get production || true
           npm config get omit || true
-          npm config get include || true
 
-          # Remove conflicting config if present on the runner
-          npm config delete production || true
-          npm config delete omit || true
-
-          echo "npm config after cleanup:"
-          npm config get production || true
-          npm config get omit || true
-          npm config get include || true
-
-          npm ci --include=dev --no-audit --no-fund
+      - name: Install dependencies (dev deps included)
+        run: |
+          npm ci
 
           echo "Check local bins:"
-          ls -la node_modules/.bin | sed -n '1,120p'
+          ls -la node_modules/.bin | head -n 80
 
       - name: Verify tools (local only, no downloads)
         run: |
