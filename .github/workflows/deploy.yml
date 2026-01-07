@@ -32,22 +32,38 @@ jobs:
 
       - name: Install dependencies (force devDependencies)
         run: |
+          echo "Before cleanup:"
+          npm -v
+          npm config get production || true
+          npm config get omit || true
+          echo "NODE_ENV=$NODE_ENV"
+          echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
+
           # Remove any implicit production mode that would skip devDependencies
           npm config delete production || true
+
+          echo "After cleanup:"
+          npm config get production || true
+          npm config get omit || true
 
           # Deterministic install + force dev deps
           npm ci --include=dev --no-audit --no-fund
 
-      - name: Verify tools
+          echo "Installed bins (sample):"
+          ls -la node_modules/.bin | head -n 50
+
+      - name: Verify tools (NO downloads)
         run: |
           echo "Node version:"
           node -v
           echo "npm version:"
           npm -v
-          echo "Vite version:"
-          npx vite --version
-          echo "TypeScript version:"
-          npx tsc --version
+
+          echo "Vite (local):"
+          npx --no-install vite --version
+
+          echo "TypeScript (local):"
+          npx --no-install tsc --version
 
       - name: Build
         run: npm run build
