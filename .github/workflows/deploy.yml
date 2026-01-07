@@ -27,19 +27,17 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-          # Use package.json as the cache key when a lockfile isn't present
+          # If you later add package-lock.json this file will be used for cache key
           cache-dependency-path: package.json
 
       - name: Install dependencies
         env:
-          # If a runner/global npmrc forces production installs, ensure devDependencies are still installed.
           NPM_CONFIG_PRODUCTION: "false"
-          # More resilient network settings without spamming `npm config set ...`
           npm_config_fetch_retries: "5"
           npm_config_fetch_retry_mintimeout: "20000"
           npm_config_fetch_retry_maxtimeout: "120000"
         run: |
-          # Prefer reproducible installs when a lockfile exists
+          # Use npm ci when package-lock.json exists for reproducible + faster installs
           if [ -f package-lock.json ]; then
             npm ci --no-audit --no-fund
           else
