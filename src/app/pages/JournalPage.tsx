@@ -34,6 +34,21 @@ export default function JournalPage() {
 
   const setBlock = (kind: 'P' | 'H1' | 'H2' | 'H3') => exec('formatBlock', kind);
 
+  const insertChapter = () => {
+    const title = prompt('Chapter title? (optional)') ?? '';
+    const stamp = new Date().toLocaleString();
+    const text = title.trim() ? `${title.trim()} — ${stamp}` : `Chapter — ${stamp}`;
+    try {
+      // Insert as a header then a blank line.
+      exec('formatBlock', 'H2');
+      exec('insertText', text);
+      exec('formatBlock', 'P');
+      exec('insertHTML', '<br/>');
+    } catch {
+      // no-op
+    }
+  };
+
   const save = () => {
     if (!campaignId) return;
     const html = editorRef.current ? editorRef.current.innerHTML : draftHtml;
@@ -94,6 +109,8 @@ export default function JournalPage() {
           <button className="toolBtn" onClick={() => setBlock('H1')} disabled={isLocked}>H1</button>
           <button className="toolBtn" onClick={() => setBlock('H2')} disabled={isLocked}>H2</button>
           <button className="toolBtn" onClick={() => setBlock('P')} disabled={isLocked}>P</button>
+          <span className="toolSep" />
+          <button className="toolBtn" onClick={insertChapter} disabled={isLocked}>+ Chapter</button>
           <span className="toolSep" />
           <button className="toolBtn" onClick={() => exec('insertUnorderedList')} disabled={isLocked}>• List</button>
           <button className="toolBtn" onClick={() => exec('insertOrderedList')} disabled={isLocked}>1. List</button>

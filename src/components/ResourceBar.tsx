@@ -1,5 +1,5 @@
 import React, { useMemo, useState } from 'react';
-import { campaignActions, getActiveCampaign } from '../storage/useCampaignStore';
+import { campaignActions, useCampaignStore } from '../storage/useCampaignStore';
 
 type Panel =
   | { kind: 'attitude' }
@@ -19,6 +19,9 @@ function CheckboxLine({ total, value, onChange, maxLabel }: { total: number; val
   const boxes = Array.from({ length: total }, (_, i) => i);
   return (
     <div>
+      <div className="muted small" style={{ marginBottom: 6 }}>
+        {value}/{total}
+      </div>
       <div className="checkboxRow">
         {boxes.map((i) => {
           const checked = i < value;
@@ -42,7 +45,11 @@ function CheckboxLine({ total, value, onChange, maxLabel }: { total: number; val
 }
 
 export default function ResourceBar() {
-  const campaign = getActiveCampaign();
+  const { campaigns, activeCampaignId } = useCampaignStore();
+  const campaign = useMemo(
+    () => campaigns.find((c) => c.id === activeCampaignId) ?? null,
+    [campaigns, activeCampaignId]
+  );
   const [panel, setPanel] = useState<Panel | null>(null);
 
   if (!campaign) return null;

@@ -2,6 +2,8 @@ export type OtherGearItem = {
   id: string;
   name: string;
   description: string;
+  /** True if this item is eligible as a starting “Other gear” pick (marked with S in the Solo Blaster PDF). */
+  starting?: boolean;
   costs?: string;
   requires?: string;
 };
@@ -14,6 +16,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'A pistol-sized launcher that fires an anti-negafriction dart which sticks firmly to most surfaces until switched off. The dart is attached to a hundred feet of lightweight carbon-fibre cable, which can be retracted via the launcher’s micro-winch.',
     costs: '1 coil',
+    starting: true,
   },
   {
     id: 'spacetimeAmpimeter',
@@ -21,6 +24,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'Allows you to measure spacetime thickness in your vicinity, which can help you find thin-zones and other quantum abnormalities. Available as a standalone device or as a smartphone dongle. Also grants +1d6 to Portal Discovery beats.',
     costs: '1 disc',
+    starting: true,
   },
   {
     id: 'multiversalMaps',
@@ -28,6 +32,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'Local terrain maps for a number of worlds, overlaid and gridded, allowing you to figure out exactly which part of that vampire nest you’re going to portal right into. Available in a bizarrely-folded waterproof hardcopy for the exceptionally paranoid.',
     costs: '1 disc',
+    starting: true,
   },
   {
     id: 'smallDrone',
@@ -35,6 +40,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'Can be controlled manually via a difficult-to-use app, or programmed to fly in predictable patterns or keep a subject in sight. Useful for scouting, filming stunts, carrying less than a kilogram, and running out of power right when it’s 400 feet out over a lake of acid.',
     costs: '1 disc',
+    starting: true,
   },
   {
     id: 'hackingTools',
@@ -42,6 +48,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'May include an advanced handset or hacking gauntlet, as well as an arsenal of data spikes, keyloggers, transceivers, rippers, cloners, proxies, packet dumps, brute-force salvos, and old-fashioned lock picks.',
     costs: '1 disc',
+    starting: true,
   },
   {
     id: 'repairTools',
@@ -49,6 +56,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'May include soldering irons, laser torches, screwdrivers, ratchets, tweezers, skate-tools, multimeters, oscilloscopes, decoiling pliers, astral bolts, duct tape, and various spare parts needed to repair, salvage, or modify tech away from home.',
     costs: '1 coil',
+    starting: true,
   },
   {
     id: 'proCameraGear',
@@ -56,6 +64,7 @@ export const OTHER_GEAR: OtherGearItem[] = [
     description:
       'Covers a variety of DSLRs, vintage film cameras, chest-mounted action cams, shoulder-mounted 3D video rigs, advanced drone attachments (drone sold separately) and anything else better or different than your phone’s camera.',
     costs: '1 lens',
+    starting: true,
   },
   {
     id: 'mask',

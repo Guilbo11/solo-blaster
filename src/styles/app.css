@@ -3,7 +3,7 @@
   --font-body: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
   --font-title: 'Bangers', 'Inter', system-ui, sans-serif;
 
-  /* A colourful-but-readable palette inspired by Slugblaster’s vibe */
+  /* Pastel palette inspired by the Solo Blaster book */
   --ink: #101114;
   --paper: #fafafa;
   --panel: rgba(255,255,255,0.92);
@@ -11,10 +11,13 @@
   --line: rgba(0,0,0,0.10);
   --softLine: rgba(0,0,0,0.06);
 
-  --accentPink: #ff3bd4;
-  --accentCyan: #00d7ff;
-  --accentLime: #a6ff2e;
-  --accentYellow: #ffd43b;
+  --accentPink: #f39ad7;
+  --accentCyan: #8fe3f5;
+  --accentLime: #bfeea6;
+  --accentYellow: #ffe08a;
+  --accentPurple: #c7b6ff;
+  --accentBlue: #a8c7ff;
+  --accentGreen: #bfeea6;
   --danger: #d1153a;
 
   --shadowCard: 0 10px 24px rgba(0,0,0,0.10);
@@ -30,11 +33,12 @@
 
 body{
   margin: 0;
-  /* Subtle, colourful energy without hurting readability */
+  /* Curvy “blob” background, soft pastel, minimal gradients */
   background:
-    radial-gradient(1100px 700px at 15% -10%, rgba(255,59,212,0.18), transparent 60%),
-    radial-gradient(900px 600px at 90% 10%, rgba(0,215,255,0.16), transparent 55%),
-    radial-gradient(900px 700px at 50% 120%, rgba(166,255,46,0.14), transparent 60%),
+    radial-gradient(800px 520px at 18% 8%, rgba(199,182,255,0.35), transparent 62%),
+    radial-gradient(860px 560px at 88% 14%, rgba(143,227,245,0.32), transparent 64%),
+    radial-gradient(900px 620px at 52% 110%, rgba(255,224,138,0.28), transparent 66%),
+    radial-gradient(740px 520px at 6% 92%, rgba(243,154,215,0.24), transparent 62%),
     var(--paper);
 }
 
@@ -364,6 +368,79 @@ body{
   border: 1px dashed rgba(0,0,0,0.20);
   background: rgba(0, 215, 255, 0.10);
   box-shadow: var(--shadowSoft);
+}
+
+/* === Small UI helpers (used across Character/NPCs) === */
+.fieldLabel{
+  font-weight: 800;
+  font-size: 12px;
+  color: rgba(16,17,20,0.72);
+  margin: 0 0 6px 2px;
+}
+
+.subcard{
+  border: 1px solid var(--softLine);
+  border-radius: 14px;
+  padding: 10px;
+  background: rgba(255,255,255,0.78);
+}
+
+.btnGhost{
+  background: rgba(255,255,255,0.88);
+  color: var(--ink);
+  border-color: rgba(0,0,0,0.12);
+}
+
+.btnSelected{
+  background: linear-gradient(90deg, rgba(199,182,255,0.95), rgba(143,227,245,0.95));
+  color: #121318;
+  border-color: rgba(0,0,0,0.10);
+}
+
+.details{
+  border: 1px solid var(--softLine);
+  border-radius: 14px;
+  background: rgba(255,255,255,0.78);
+  padding: 8px 10px;
+}
+.details summary{
+  cursor: pointer;
+  list-style: none;
+}
+.details summary::-webkit-details-marker{ display:none; }
+.detailsBody{ padding-top: 8px; }
+
+.pre{
+  margin: 8px 0 0;
+  padding: 10px 12px;
+  border-radius: 14px;
+  border: 1px solid var(--softLine);
+  background: rgba(255,255,255,0.78);
+  font-size: 12px;
+  line-height: 1.35;
+  color: rgba(16,17,20,0.88);
+}
+
+.chips{
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.track{ display:flex; gap: 6px; flex-wrap: wrap; }
+.trackBox{ display:inline-flex; align-items:center; }
+.trackBox input{ position:absolute; opacity:0; pointer-events:none; }
+.trackBox span{
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+  border: 1px solid rgba(0,0,0,0.18);
+  background: rgba(255,255,255,0.85);
+  box-shadow: 0 2px 0 rgba(0,0,0,0.05);
+}
+.trackBox input:checked + span{
+  background: rgba(191,238,166,0.85);
+  border-color: rgba(0,0,0,0.14);
 }
 
 .stickerDanger{

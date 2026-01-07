@@ -2,13 +2,13 @@ import React, { useEffect, useMemo } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { useCampaignStore } from '../storage/useCampaignStore';
 import CampaignsPage from './pages/CampaignsPage';
-import SheetPage from './pages/SheetPage';
 import RunPage from './pages/RunPage';
 import DowntimePage from './pages/DowntimePage';
 import EpiloguePage from './pages/EpiloguePage';
-import ToolsPage from './pages/ToolsPage';
 import CharacterPage from './pages/CharacterPage';
 import JournalPage from './pages/JournalPage';
+import NPCsPage from './pages/NPCsPage';
+import WorldsPage from './pages/WorldsPage';
 import BottomNav from '../components/BottomNav';
 import ResourceBar from '../components/ResourceBar';
 import FloatingActions from '../components/FloatingActions';
@@ -47,13 +47,13 @@ export default function App() {
             ) : (
               <Routes>
                 <Route path="/journal" element={<JournalPage />} />
-                <Route path="/sheet" element={<SheetPage />} />
                 <Route path="/character" element={<CharacterPage />} />
+                <Route path="/worlds" element={<WorldsPage />} />
                 <Route path="/run" element={<RunPage />} />
+                <Route path="/npcs" element={<NPCsPage />} />
                 <Route path="/downtime" element={<DowntimePage />} />
                 <Route path="/epilogue" element={<EpiloguePage />} />
-                <Route path="/tools" element={<ToolsPage />} />
-                <Route path="*" element={<Navigate to="/sheet" replace />} />
+                <Route path="*" element={<Navigate to="/character" replace />} />
               </Routes>
             )}
           </div>

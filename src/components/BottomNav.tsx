@@ -3,9 +3,10 @@ import { useLocation, useNavigate } from 'react-router-dom';
 
 const tabs = [
   { path: '/journal', label: 'Journal' },
-  { path: '/sheet', label: 'Sheet' },
   { path: '/character', label: 'Character' },
+  { path: '/worlds', label: 'Worlds' },
   { path: '/run', label: 'Run' },
+  { path: '/npcs', label: 'NPCs' },
   { path: '/downtime', label: 'Downtime' },
   { path: '/epilogue', label: 'Epilogue' },
 ];

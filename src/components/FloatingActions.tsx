@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { getActiveCampaign, campaignActions } from '../storage/useCampaignStore';
 import { TABLES, rollTable } from '../tables/soloTables';
 import { OTHER_GEAR } from '../compendiums/otherGear';
+import { CANON_WORLDS } from '../compendiums/worlds';
 
 function toast(message: string) {
   window.dispatchEvent(new CustomEvent('solo:toast', { detail: { message, durationMs: 4000 } }));
@@ -186,6 +187,8 @@ function escapeHtml(s: string) {
 }
 
 function OraclePanel({ campaignId, onClose }: { campaignId: string; onClose: () => void }) {
+  const campaign = getActiveCampaign();
+  const customWorlds = Array.isArray(campaign?.worlds) ? campaign!.worlds! : [];
   const [open, setOpen] = useState<{ [k: string]: boolean }>({});
   const [selectedTable, setSelectedTable] = useState(TABLES[0]?.id ?? 'slogans');
 
@@ -234,6 +237,38 @@ function OraclePanel({ campaignId, onClose }: { campaignId: string; onClose: () 
                   <p className="muted">{g.description}</p>
                 </details>
               ))}
+            </div>
+          )}
+        </div>
+
+        <div className="panelSection">
+          <button className="collapseHeader" onClick={() => toggle('worlds')}>▸ Worlds</button>
+          {open.worlds && (
+            <div className="panelBody">
+              {CANON_WORLDS.map((w) => (
+                <details key={w.id} className="details">
+                  <summary><strong>{w.name}</strong></summary>
+                  <pre className="pre" style={{ whiteSpace: 'pre-wrap' }}>{w.body}</pre>
+                </details>
+              ))}
+
+              {customWorlds.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <div className="muted small" style={{ marginBottom: 6 }}>Custom Worlds</div>
+                  {customWorlds.map((w) => (
+                    <details key={w.id} className="details">
+                      <summary><strong>{w.name}</strong></summary>
+                      <div className="muted small" style={{ marginTop: 6 }}>
+                        {w.colours?.length ? <div><strong>Colours:</strong> {w.colours.join(', ')}</div> : null}
+                        {w.landscape ? <div><strong>Landscape:</strong> {w.landscape}</div> : null}
+                        {w.ruins ? <div><strong>Ruins:</strong> {w.ruins}</div> : null}
+                        {w.twist ? <div><strong>Twist:</strong> {w.twist}</div> : null}
+                        <div style={{ marginTop: 6 }}><strong>Adjacencies:</strong> {Array.isArray(w.adjacencies) && w.adjacencies.length ? w.adjacencies.join(', ') : '—'}</div>
+                      </div>
+                    </details>
+                  ))}
+                </div>
+              )}
             </div>
           )}
         </div>

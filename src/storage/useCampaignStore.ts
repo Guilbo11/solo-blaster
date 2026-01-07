@@ -33,32 +33,14 @@ function makeCampaign(name: string): Campaign {
     createdAt: now,
     updatedAt: now,
     locked: false,
-    character: {
-    created: false,
-    playbook: 'Loner',
-    name: 'Unnamed Loner',
-    pronouns: '',
-    look: '',
-    family: '',
-    vibes: '',
-    trait: '',
-    raygun: { a: '', b: '' },
-    hoverboard: { gripColor: '', gripCut: '', deckGraphic: '', boardType: '' },
-    personalGear: '',
-    otherGear: [],
-    signatureDevice: '',
-    signatureLooks: '',
-    startingMod: '',
-    hangouts: [],
-    factions: { fan: '', annoyed: '', family: '' },
-    portals: [],
-    hook: '',
-  },
+    character: defaultCharacter(),
     resources: defaultResources(),
     run: { isActive: false, disasterRolled: false, tracks: [] },
     journalHtml: '',
     journal: [],
     epilogue: { legacies: [], dooms: [] },
+    npcs: [],
+    worlds: [],
   };
 }
 
@@ -70,16 +52,23 @@ function defaultCharacter() {
     name: 'Unnamed Loner',
     pronouns: '',
     look: '',
-    family: '',
+    family: ['', ''] as [string, string],
     vibes: '',
-    trait: '',
+    traits: [] as string[],
+    autodidact: ['', ''] as [string, string],
     raygun: { a: '', b: '' },
     hoverboard: { gripColor: '', gripCut: '', deckGraphic: '', boardType: '' },
     personalGear: '',
     otherGear: [] as string[],
+    signatureGear: undefined as any,
+    components: { coil: 0, disc: 0, lens: 0, gem: 0 },
+    ownedMods: [] as string[],
+    notes: '',
+    // legacy
     signatureDevice: '',
     signatureLooks: '',
     startingMod: '',
+    trait: '',
     hangouts: [] as string[],
     factions: { fan: '', annoyed: '', family: '' },
     portals: [] as { id: string; from: string; to: string }[],
@@ -113,7 +102,21 @@ function normalizeCampaign(c: any): Campaign {
     portals: Array.isArray(rawChar.portals) ? rawChar.portals : baseChar.portals,
     hangouts: Array.isArray(rawChar.hangouts) ? rawChar.hangouts : baseChar.hangouts,
     otherGear: Array.isArray(rawChar.otherGear) ? rawChar.otherGear : baseChar.otherGear,
+    components: { ...baseChar.components, ...(rawChar.components ?? {}) },
+    ownedMods: Array.isArray(rawChar.ownedMods) ? rawChar.ownedMods : baseChar.ownedMods,
+    notes: typeof rawChar.notes === 'string' ? rawChar.notes : baseChar.notes,
+    traits: Array.isArray(rawChar.traits) ? rawChar.traits : baseChar.traits,
+    autodidact:
+      Array.isArray(rawChar.autodidact) && rawChar.autodidact.length === 2
+        ? (rawChar.autodidact as [string, string])
+        : baseChar.autodidact,
+    family: (Array.isArray(rawChar.family) && rawChar.family.length === 2 ? rawChar.family : (typeof rawChar.family === 'string' ? [rawChar.family, ''] : baseChar.family)) as [string, string],
   };
+
+  // Migrations / back-compat:
+  if (!character.traits.length && typeof (rawChar?.trait) === 'string' && rawChar.trait.trim()) {
+    character.traits = [rawChar.trait.trim()];
+  }
 
   const run = {
     isActive: false,
@@ -144,6 +147,8 @@ function normalizeCampaign(c: any): Campaign {
     journalHtml: typeof c?.journalHtml === 'string' ? c.journalHtml : '',
     journal: Array.isArray(c?.journal) ? c.journal : [],
     epilogue,
+    npcs: Array.isArray(c?.npcs) ? c.npcs : [],
+    worlds: Array.isArray(c?.worlds) ? c.worlds : [],
   };
 }
 function loadState(): State {
