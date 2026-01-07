@@ -27,18 +27,24 @@ jobs:
         with:
           node-version: 20
           cache: "npm"
-          cache-dependency-path: package-lock.json
+          # Use package.json as the cache key when a lockfile isn't present
+          cache-dependency-path: package.json
 
       - name: Install dependencies
         env:
-          # If a runner/global npmrc forces production installs, this ensures devDependencies are still installed.
+          # If a runner/global npmrc forces production installs, ensure devDependencies are still installed.
           NPM_CONFIG_PRODUCTION: "false"
           # More resilient network settings without spamming `npm config set ...`
           npm_config_fetch_retries: "5"
           npm_config_fetch_retry_mintimeout: "20000"
           npm_config_fetch_retry_maxtimeout: "120000"
         run: |
-          npm install --include=dev --no-audit --no-fund --prefer-offline
+          # Prefer reproducible installs when a lockfile exists
+          if [ -f package-lock.json ]; then
+            npm ci --no-audit --no-fund
+          else
+            npm install --include=dev --no-audit --no-fund
+          fi
 
       - name: Build
         run: npm run build
