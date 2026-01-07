@@ -19,6 +19,13 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 25
 
+    # Force npm behavior at the environment level (stronger than hoping defaults work)
+    env:
+      NODE_ENV: development
+      NPM_CONFIG_PRODUCTION: "false"
+      NPM_CONFIG_INCLUDE: "dev"
+      NPM_CONFIG_OMIT: ""     # critical: neutralize omit=dev if set globally
+
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -32,27 +39,29 @@ jobs:
 
       - name: Install dependencies (force devDependencies)
         run: |
-          echo "Before cleanup:"
+          echo "npm version:"
           npm -v
+
+          echo "npm config before cleanup:"
           npm config get production || true
           npm config get omit || true
-          echo "NODE_ENV=$NODE_ENV"
-          echo "NPM_CONFIG_PRODUCTION=$NPM_CONFIG_PRODUCTION"
+          npm config get include || true
 
-          # Remove any implicit production mode that would skip devDependencies
+          # Remove conflicting config if present on the runner
           npm config delete production || true
+          npm config delete omit || true
 
-          echo "After cleanup:"
+          echo "npm config after cleanup:"
           npm config get production || true
           npm config get omit || true
+          npm config get include || true
 
-          # Deterministic install + force dev deps
           npm ci --include=dev --no-audit --no-fund
 
-          echo "Installed bins (sample):"
-          ls -la node_modules/.bin | head -n 50
+          echo "Check local bins:"
+          ls -la node_modules/.bin | sed -n '1,120p'
 
-      - name: Verify tools (NO downloads)
+      - name: Verify tools (local only, no downloads)
         run: |
           echo "Node version:"
           node -v
@@ -60,10 +69,10 @@ jobs:
           npm -v
 
           echo "Vite (local):"
-          npx --no-install vite --version
+          ./node_modules/.bin/vite --version
 
           echo "TypeScript (local):"
-          npx --no-install tsc --version
+          ./node_modules/.bin/tsc --version
 
       - name: Build
         run: npm run build
