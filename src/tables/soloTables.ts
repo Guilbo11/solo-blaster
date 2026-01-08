@@ -1,4 +1,6 @@
-export type TableDie = 'd6' | 'd66';
+import { CANON_WORLDS } from '../compendiums/worlds';
+
+export type TableDie = 'd6' | 'd66' | 'random';
 
 export type TableEntry = {
   /** For d6: "1".."6". For d66: "11".."66" */
@@ -266,6 +268,31 @@ export const TABLES: RollTableDef[] = [
   },
 ];
 
+// --- World-specific dynamic oracle tables (Problems + Checkpoints) ---
+// These appear in the Roll a Table dropdown as:
+//  - "Null potential problems"
+//  - "Null Checkpoints"
+// etc.
+// They use `die: 'random'` to support variable list lengths.
+const WORLD_TABLES: RollTableDef[] = CANON_WORLDS.flatMap((w) => {
+  const problems: RollTableDef = {
+    id: `world_${w.id}_problems`,
+    name: `${w.id} potential problems`,
+    die: 'random',
+    entries: w.problems.map((text, i) => ({ key: String(i + 1), text })),
+  };
+  const checkpoints: RollTableDef = {
+    id: `world_${w.id}_checkpoints`,
+    name: `${w.id} Checkpoints`,
+    die: 'random',
+    entries: w.checkpoints.map((text, i) => ({ key: String(i + 1), text })),
+  };
+  return [problems, checkpoints];
+});
+
+// Append to exported TABLES list (keeps existing IDs stable).
+TABLES.push(...WORLD_TABLES);
+
 function d6(): number {
   return Math.floor(Math.random() * 6) + 1;
 }
@@ -279,6 +306,12 @@ function d66(): string {
 export function rollTable(tableId: string): { key: string; value: string } | null {
   const t = TABLES.find((x) => x.id === tableId);
   if (!t) return null;
+
+  // Random tables have variable lengths (e.g., World problems/checkpoints).
+  if (t.die === 'random') {
+    const any = t.entries[Math.floor(Math.random() * t.entries.length)];
+    return any ? { key: any.key, value: any.text } : null;
+  }
 
   const key = t.die === 'd6' ? String(d6()) : d66();
   const entry = t.entries.find((e) => e.key === key);

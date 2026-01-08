@@ -516,10 +516,29 @@ body{
 
 /* Side panel */
 .sidePanelBackdrop{ position: fixed; inset: 0; background: rgba(0,0,0,0.25); z-index: 90; }
-.sidePanel{ position: fixed; top: 0; right: 0; height: 100vh; width: min(420px, 92vw); background: var(--panelSolid); border-left: 1px solid var(--line); box-shadow: var(--shadowCard); z-index: 91; padding: 12px; overflow: auto; }
+.sidePanel{
+  position: fixed;
+  top: 0;
+  right: 0;
+  height: 100vh;
+  width: min(420px, 92vw);
+  /* Pastel/glassy panel to match the rest of the app */
+  background: rgba(255,255,255,0.78);
+  backdrop-filter: blur(10px);
+  border-left: 1px solid var(--softLine);
+  box-shadow: var(--shadowCard);
+  z-index: 91;
+  padding: 12px;
+  overflow: auto;
+}
 .sidePanelHeader{ display:flex; justify-content: space-between; align-items:center; gap: 10px; }
-.collapseBlock{ border: 1px solid var(--softLine); border-radius: 14px; padding: 10px; margin-top: 10px; }
-.collapseTitle{ font-family: var(--font-title); font-size: 18px; display:flex; justify-content: space-between; align-items:center; cursor:pointer; }
+.collapseBlock{ border: 1px solid var(--softLine); border-radius: 16px; padding: 10px; margin-top: 10px; background: rgba(255,255,255,0.6); }
+.collapseTitle{ font-family: var(--font-title); font-size: 18px; display:flex; justify-content: space-between; align-items:center; cursor:pointer; user-select: none; }
+
+/* Back-compat styles used by some sections */
+.panelSection{ border: 1px solid var(--softLine); border-radius: 16px; padding: 10px; margin-top: 10px; background: rgba(255,255,255,0.6); }
+.collapseHeader{ width: 100%; text-align: left; border: 0; background: transparent; font-family: var(--font-title); font-size: 18px; display:flex; justify-content: space-between; align-items:center; cursor:pointer; padding: 0; }
+.panelBody{ padding-top: 8px; }
 
 /* Toast */
 .toast{ position: fixed; left: 50%; transform: translateX(-50%); bottom: 78px; background: rgba(16,17,20,0.92); color: white; padding: 10px 12px; border-radius: 999px; z-index: 200; max-width: 90vw; text-align: center; }

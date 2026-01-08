@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { campaignActions } from '../../storage/useCampaignStore';
 import { useActiveCampaign } from '../../storage/useActiveCampaign';
-import { CANON_WORLDS, CANON_WORLD_NAMES } from '../../compendiums/worlds';
+import { CANON_WORLDS, CANON_WORLD_NAMES, hazardLabel } from '../../compendiums/worlds';
 import { makeWorldFromRolls, rollWorldColours, rollWorldLandscape, rollWorldRuins, rollWorldTwist } from '../../tables/worldMakerTables';
 
 function toast(message: string) {
@@ -29,8 +29,34 @@ export default function WorldsPage() {
         <div style={{ marginTop: 10 }}>
           {CANON_WORLDS.map((w) => (
             <details key={w.id} className="details">
-              <summary><strong>{w.name}</strong></summary>
-              <pre className="pre" style={{ whiteSpace: 'pre-wrap' }}>{w.body}</pre>
+              <summary>
+                <strong>{w.displayName}</strong>
+                <span className="muted" style={{ marginLeft: 8 }}>{hazardLabel(w.hazard)}</span>
+              </summary>
+
+              <div className="muted" style={{ marginTop: 8 }}>
+                <div className="h4" style={{ marginTop: 6 }}>PROBLEMS</div>
+                <ul>
+                  {w.problems.map((p, idx) => <li key={idx}>{p}</li>)}
+                </ul>
+
+                <div className="h4" style={{ marginTop: 10 }}>CHECKPOINTS</div>
+                <ul>
+                  {w.checkpoints.map((c, idx) => <li key={idx}>{c}</li>)}
+                </ul>
+
+                {w.featuredLocations.length > 0 && (
+                  <>
+                    <div className="h4" style={{ marginTop: 10 }}>FEATURED LOCATIONS</div>
+                    {w.featuredLocations.map((loc, idx) => (
+                      <details key={idx} className="details" style={{ marginTop: 6 }}>
+                        <summary><strong>{loc.name}</strong></summary>
+                        <p className="muted">{loc.description}</p>
+                      </details>
+                    ))}
+                  </>
+                )}
+              </div>
             </details>
           ))}
         </div>

@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { getActiveCampaign, campaignActions } from '../storage/useCampaignStore';
 import { TABLES, rollTable } from '../tables/soloTables';
 import { OTHER_GEAR } from '../compendiums/otherGear';
-import { CANON_WORLDS } from '../compendiums/worlds';
+import { CANON_WORLDS, hazardLabel } from '../compendiums/worlds';
 
 function toast(message: string) {
   window.dispatchEvent(new CustomEvent('solo:toast', { detail: { message, durationMs: 4000 } }));
@@ -227,10 +227,13 @@ function OraclePanel({ campaignId, onClose }: { campaignId: string; onClose: () 
           )}
         </div>
 
-        <div className="panelSection">
-          <button className="collapseHeader" onClick={() => toggle('otherGear')}>▸ Other Gear</button>
+        <div className="collapseBlock">
+          <div className="collapseTitle" onClick={() => toggle('otherGear')}>
+            <span>Other Gear</span>
+            <span>{open.otherGear ? '▾' : '▸'}</span>
+          </div>
           {open.otherGear && (
-            <div className="panelBody">
+            <div className="panelBody" style={{ marginTop: 8 }}>
               {OTHER_GEAR.map((g) => (
                 <details key={g.id} className="details">
                   <summary><strong>{g.name}</strong></summary>
@@ -241,19 +244,48 @@ function OraclePanel({ campaignId, onClose }: { campaignId: string; onClose: () 
           )}
         </div>
 
-        <div className="panelSection">
-          <button className="collapseHeader" onClick={() => toggle('worlds')}>▸ Worlds</button>
+        <div className="collapseBlock">
+          <div className="collapseTitle" onClick={() => toggle('worlds')}>
+            <span>Worlds</span>
+            <span>{open.worlds ? '▾' : '▸'}</span>
+          </div>
           {open.worlds && (
-            <div className="panelBody">
+            <div className="panelBody" style={{ marginTop: 8 }}>
               {CANON_WORLDS.map((w) => (
                 <details key={w.id} className="details">
-                  <summary><strong>{w.name}</strong></summary>
-                  <pre className="pre" style={{ whiteSpace: 'pre-wrap' }}>{w.body}</pre>
+                  <summary>
+                    <strong>{w.displayName}</strong>
+                    <span className="muted" style={{ marginLeft: 8 }}>{hazardLabel(w.hazard)}</span>
+                  </summary>
+
+                  <div className="muted" style={{ marginTop: 8 }}>
+                    <div className="h4" style={{ marginTop: 6 }}>PROBLEMS</div>
+                    <ul>
+                      {w.problems.map((p, idx) => <li key={idx}>{p}</li>)}
+                    </ul>
+
+                    <div className="h4" style={{ marginTop: 10 }}>CHECKPOINTS</div>
+                    <ul>
+                      {w.checkpoints.map((c, idx) => <li key={idx}>{c}</li>)}
+                    </ul>
+
+                    {w.featuredLocations.length > 0 && (
+                      <>
+                        <div className="h4" style={{ marginTop: 10 }}>FEATURED LOCATIONS</div>
+                        {w.featuredLocations.map((loc, idx) => (
+                          <details key={idx} className="details" style={{ marginTop: 6 }}>
+                            <summary><strong>{loc.name}</strong></summary>
+                            <p className="muted">{loc.description}</p>
+                          </details>
+                        ))}
+                      </>
+                    )}
+                  </div>
                 </details>
               ))}
 
               {customWorlds.length > 0 && (
-                <div style={{ marginTop: 12 }}>
+                <div style={{ marginTop: 14 }}>
                   <div className="muted small" style={{ marginBottom: 6 }}>Custom Worlds</div>
                   {customWorlds.map((w) => (
                     <details key={w.id} className="details">
