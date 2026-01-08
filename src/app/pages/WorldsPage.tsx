@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import { campaignActions } from '../../storage/useCampaignStore';
 import { useActiveCampaign } from '../../storage/useActiveCampaign';
 import { CANON_WORLDS, CANON_WORLD_NAMES, hazardLabel } from '../../compendiums/worlds';
@@ -15,12 +15,60 @@ export default function WorldsPage() {
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
   const worlds = Array.isArray(campaign.worlds) ? campaign.worlds : [];
+  const portals = Array.isArray(campaign.character?.portals) ? campaign.character.portals : [];
+
+  const portalMap = useMemo(() => {
+    const m = new Map<string, string[]>();
+    const add = (from: string, line: string) => {
+      m.set(from, [...(m.get(from) ?? []), line]);
+    };
+
+    for (const p of portals as any[]) {
+      if (!p?.from || !p?.to) continue;
+      if (p.twoWay) {
+        const note = p.note ? ` — ${p.note}` : '';
+        add(p.from, `Two-way portal with ${p.to}${note}`);
+        add(p.to, `Two-way portal with ${p.from}${note}`);
+      } else {
+        const note = p.note ? ` — ${p.note}` : '';
+        add(p.from, `One-way portal to ${p.to}${note}`);
+      }
+    }
+
+    // Sort lines per world
+    for (const [k, v] of Array.from(m.entries())) {
+      m.set(k, v.slice().sort((a, b) => a.localeCompare(b)));
+    }
+    return Array.from(m.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [portals]);
 
   return (
     <div className="page">
       <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
         <h2>Worlds</h2>
         <button className="btn" onClick={() => setCreateOpen(true)} disabled={campaign.locked}>Create World</button>
+      </div>
+
+      <div className="card" style={{ marginTop: 12 }}>
+        <div className="h3">Map</div>
+        <div className="muted small" style={{ marginTop: 4 }}>
+          One-way portals are listed under the world they originate from. Two-way portals appear on both worlds.
+        </div>
+
+        {portalMap.length === 0 ? (
+          <p className="muted" style={{ marginTop: 10 }}>No portals yet. Create your starting map in Character creation, or use Portal Discovery in Downtime.</p>
+        ) : (
+          <div style={{ marginTop: 10, display: 'grid', gap: 10 }}>
+            {portalMap.map(([world, lines]) => (
+              <div key={world} className="subcard">
+                <div style={{ fontWeight: 900 }}>{world}</div>
+                <ul style={{ marginTop: 6 }}>
+                  {lines.map((ln, idx) => <li key={idx}>{ln}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <div className="card" style={{ marginTop: 12 }}>

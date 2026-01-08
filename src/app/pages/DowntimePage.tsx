@@ -4,6 +4,7 @@ import { campaignActions } from '../../storage/useCampaignStore';
 import { BEATS, type Beat } from '../../compendiums/beats';
 import { SIGNATURE_GEAR, canAfford, type SignatureMod } from '../../compendiums/signatureGear';
 import { uuid } from '../../utils/uuid';
+import { adjacentTo, areAdjacent, getAllWorldNames, CANON_PORTAL_WORLDS } from '../../utils/worldAdjacency';
 
 type BeatModal =
   | { kind: 'doomName'; beat: Beat }
@@ -11,36 +12,6 @@ type BeatModal =
   | { kind: 'inTheLab'; beat: Beat }
   | { kind: 'portalDiscovery'; beat: Beat };
 
-// Canon adjacency list (keep as-written in the Portal Discovery beat).
-const WORLDS = [
-  'Null',
-  'Vastiche',
-  'Thennis Spar',
-  'The Golden Jungle',
-  'Operaeblum',
-  'Prismatia',
-  'Desnine',
-  'The Waking Pits',
-  'Popularia',
-  'Quahalia',
-  'Empyrean',
-  'Calorium',
-];
-
-const ADJ: Record<string, string[]> = {
-  'Null': ['Vastiche', 'Thennis Spar', 'The Golden Jungle'],
-  'Vastiche': ['Operaeblum', 'Prismatia', 'Thennis Spar', 'The Golden Jungle'],
-  'Thennis Spar': ['Null', 'Prismatia', 'Vastiche', 'The Golden Jungle', 'Desnine', 'The Waking Pits'],
-  'The Golden Jungle': ['Null', 'Thennis Spar', 'Desnine'],
-  'Operaeblum': ['Calorium', 'Empyrean', 'Prismatia', 'Vastiche'],
-  'Prismatia': ['Vastiche', 'Operaeblum', 'Thennis Spar', 'The Waking Pits', 'Popularia', 'Empyrean'],
-  'Desnine': ['The Golden Jungle', 'Thennis Spar', 'The Waking Pits', 'Quahalia'],
-  'The Waking Pits': ['Popularia', 'Prismatia', 'Desnine', 'Quahalia', 'Thennis Spar'],
-  'Popularia': ['Empyrean', 'Prismatia', 'The Waking Pits'],
-  'Quahalia': ['The Waking Pits', 'Desnine'],
-  'Empyrean': ['Calorium', 'Operaeblum', 'Prismatia', 'Popularia'],
-  'Calorium': ['Empyrean', 'Operaeblum'],
-};
 
 function toast(message: string) {
   window.dispatchEvent(new CustomEvent('solo:toast', { detail: { message, durationMs: 4000 } }));
@@ -70,32 +41,8 @@ export default function DowntimePage() {
   const campaignId = campaign.id;
   const isLocked = campaign.locked;
 
-  const customWorlds = Array.isArray(campaign.worlds) ? campaign.worlds : [];
-  const allWorldNames = Array.from(new Set([...WORLDS, ...customWorlds.map((w) => w.name)])).sort((a, b) => a.localeCompare(b));
-
-  const customAdj = useMemo(() => {
-    const m = new Map<string, Set<string>>();
-    for (const w of customWorlds) {
-      const set = new Set<string>(Array.isArray(w.adjacencies) ? w.adjacencies : []);
-      m.set(w.name, set);
-    }
-    return m;
-  }, [customWorlds]);
-
-  const areAdjacent = (a: string, b: string) => {
-    if (a === b) return false;
-    // Canon list (kept from the beat text)
-    const canonA = ADJ[a] ?? [];
-    const canonB = ADJ[b] ?? [];
-    if (canonA.includes(b) || canonB.includes(a)) return true;
-    // Custom worlds: adjacency is manual (treat as undirected)
-    const ca = customAdj.get(a);
-    const cb = customAdj.get(b);
-    if (ca?.has(b) || cb?.has(a)) return true;
-    return false;
-  };
-
-  const adjacentToA = useMemo(() => allWorldNames.filter((w) => areAdjacent(worldA, w)), [allWorldNames, worldA]);
+  const allWorldNames = useMemo(() => getAllWorldNames(campaign), [campaign.worlds]);
+  const adjacentToA = useMemo(() => adjacentTo(campaign, worldA), [campaign.worlds, worldA]);
 
   const grouped = useMemo(() => {
     const m = new Map<string, Beat[]>();
@@ -373,7 +320,7 @@ export default function DowntimePage() {
 
   function doPortalDiscovery() {
     if (!pendingBeat) return;
-    if (!areAdjacent(worldA, worldB)) {
+    if (!areAdjacent(campaign, worldA, worldB)) {
       toast('World B must be adjacent to World A.');
       return;
     }
@@ -390,10 +337,31 @@ export default function DowntimePage() {
     campaignActions.updateCampaign(campaignId, (c) => {
       const ch = c.character;
       const existing = Array.isArray(ch.portals) ? ch.portals : [];
-      const already = existing.some(
-        (p) => (p.from === worldA && p.to === worldB) || (p.from === worldB && p.to === worldA),
-      );
-      const nextPortals = already ? existing : [...existing, { id: uuid(), from: worldA, to: worldB }];
+      // Translate outcome into a stored portal record.
+      let from = worldA;
+      let to = worldB;
+      let twoWay = false;
+      let note = '';
+      if (outcome === 'one-way to A') {
+        from = worldB;
+        to = worldA;
+        twoWay = false;
+      } else if (outcome === 'one-way to B') {
+        from = worldA;
+        to = worldB;
+        twoWay = false;
+      } else {
+        twoWay = true;
+        note = outcome === 'two-way portal zone' ? '' : outcome;
+      }
+
+      const already = existing.some((p: any) => {
+        if (p.twoWay) {
+          return (p.from === worldA && p.to === worldB) || (p.from === worldB && p.to === worldA);
+        }
+        return p.from === from && p.to === to;
+      });
+      const nextPortals = already ? existing : [...existing, { id: uuid(), from, to, twoWay, note }];
       return { ...c, updatedAt: Date.now(), character: { ...ch, portals: nextPortals } };
     });
     logToJournal('Portal Discovery', `A: ${worldA}\nB: ${worldB}\nRoll: ${r} → ${outcome}`);

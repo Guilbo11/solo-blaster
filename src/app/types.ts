@@ -34,6 +34,10 @@ export interface PortalLink {
   id: UUID;
   from: string;
   to: string;
+  /** If true, treat as bidirectional. If false/undefined, treat as one-way from → to. */
+  twoWay?: boolean;
+  /** Optional note (e.g., very dangerous, unstable portal zone, etc.). */
+  note?: string;
 }
 
 export interface World {
@@ -100,7 +104,7 @@ export interface Character {
 
   // Connections & map
   hangouts: string[]; // should be 2
-  factions: { fan: string; annoyed: string; family: string };
+  factions: { fan: string; annoyed: string; family: { name: string; relation: 1 | -1 } };
   portals: PortalLink[];
 
   // Hook

@@ -101,8 +101,8 @@ export const HANGOUT_TABLE: Array<{ left: string; right: string }> = [
   { left: 'Burger Man', right: 'the hoverboard park' },
   { left: 'a classroom', right: 'the school cafeteria' },
   { left: 'Make-Out Park', right: 'an abandoned building' },
-  { left: 'a friend’s basement', right: 'your hideout' },
-  { left: 'the mall', right: 'the woods' },
+  { left: "someone’s garage", right: 'a church basement' },
+  { left: 'detention', right: 'somewhere else' },
 ];
 
 // Raygun tables (Raygun section):
@@ -127,10 +127,10 @@ export const RAYGUN_STEP_B_TABLE: Array<{ left: string; right: string }> = [
 
 // v1 Hooks: prompts; replace with full hook table from the PDF if desired.
 export const HOOK_PROMPTS = [
-  'A rival wants what you found.',
-  'An authority is watching you.',
-  'A faction offers a deal with strings attached.',
-  'A portal is behaving wrong.',
-  'Someone you care about is at risk.',
-  'A monster has taken interest in you.',
+  'You had a crew once, but not anymore. Why?',
+  'You lost someone. Everyone says they’re gone, but you just know they’re out there.',
+  'You’re the first one in town to even try this.',
+  'Maybe you can prove to your older brother you’re good enough to join his crew.',
+  'You know something. Something you can’t tell anyone, but need to do something about.',
+  'I mean, this podcast won’t record itself, right?',
 ];

@@ -42,7 +42,8 @@ export default function NPCsPage() {
 
   const worldOptions = useMemo(() => {
     const custom = Array.isArray(activeCampaign?.worlds) ? activeCampaign!.worlds! : [];
-    const all = [...CANON_WORLDS.map((w) => w.name), ...custom.map((w) => w.name)];
+    // Canon worlds use displayName (WorldOracle has no `name` field).
+    const all = [...CANON_WORLDS.map((w) => w.displayName), ...custom.map((w) => w.name)];
     return Array.from(new Set(all)).sort((a, b) => a.localeCompare(b));
   }, [activeCampaign?.worlds]);
 

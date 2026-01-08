@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { campaignActions, useCampaignStore } from '../storage/useCampaignStore';
 
 type Panel =
@@ -120,10 +121,11 @@ export default function ResourceBar() {
         ))}
       </div>
 
-      {panel && (
-        // Popup window: close ONLY via Close buttons (no backdrop click to close)
-        <div className="modalBackdrop">
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
+      {panel &&
+        // Render via portal to avoid sticky/z-index/click issues.
+        createPortal(
+          <div className="drawerBackdrop" role="presentation">
+            <div className="drawerPanel" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
             {panel.kind === 'menu' ? (
               <>
                 <h3>Campaign</h3>
@@ -252,9 +254,10 @@ export default function ResourceBar() {
             ) : null}
 
             {/* doom/legacy/menu already render close buttons; others handled inline */}
-          </div>
-        </div>
-      )}
+            </div>
+          </div>,
+          document.body
+        )}
     </div>
   );
 }

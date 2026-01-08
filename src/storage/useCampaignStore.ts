@@ -73,8 +73,8 @@ function defaultCharacter() {
     startingMod: '',
     trait: '',
     hangouts: [] as string[],
-    factions: { fan: '', annoyed: '', family: '' },
-    portals: [] as { id: string; from: string; to: string }[],
+    factions: { fan: '', annoyed: '', family: { name: '', relation: 1 as 1 | -1 } },
+    portals: [] as { id: string; from: string; to: string; twoWay?: boolean; note?: string }[],
     hook: '',
   };
 }
@@ -95,13 +95,30 @@ function normalizeCampaign(c: any): Campaign {
 
   const baseChar = defaultCharacter();
   const rawChar = c?.character ?? {};
+  const rawFactions = rawChar.factions ?? {};
+  const normalizedFactions = {
+    fan: typeof rawFactions.fan === 'string' ? rawFactions.fan : baseChar.factions.fan,
+    annoyed: typeof rawFactions.annoyed === 'string' ? rawFactions.annoyed : baseChar.factions.annoyed,
+    family:
+      typeof rawFactions.family === 'string'
+        ? { name: rawFactions.family, relation: 1 as 1 | -1 }
+        : {
+            name:
+              typeof rawFactions.family?.name === 'string'
+                ? rawFactions.family.name
+                : baseChar.factions.family.name,
+            relation:
+              rawFactions.family?.relation === -1 ? (-1 as 1 | -1) : (1 as 1 | -1),
+          },
+  };
+
   const character = {
     ...baseChar,
     ...rawChar,
     // normalize nested
     raygun: { ...baseChar.raygun, ...(rawChar.raygun ?? {}) },
     hoverboard: { ...baseChar.hoverboard, ...(rawChar.hoverboard ?? {}) },
-    factions: { ...baseChar.factions, ...(rawChar.factions ?? {}) },
+    factions: normalizedFactions,
     portals: Array.isArray(rawChar.portals) ? rawChar.portals : baseChar.portals,
     hangouts: Array.isArray(rawChar.hangouts) ? rawChar.hangouts : baseChar.hangouts,
     otherGear: Array.isArray(rawChar.otherGear) ? rawChar.otherGear : baseChar.otherGear,

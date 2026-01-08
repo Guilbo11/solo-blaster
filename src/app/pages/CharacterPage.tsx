@@ -6,8 +6,10 @@ import {
   FAMILY_TABLE,
   GRIP_COLOUR_TABLE,
   GRIP_CUT_TABLE,
+  HANGOUT_TABLE,
   LONER_TRAITS,
   LOOK_WORDS,
+  HOOK_PROMPTS,
   RAYGUN_STEP_A_TABLE,
   RAYGUN_STEP_B_TABLE,
 } from '../../tables/characterTables';
@@ -19,7 +21,10 @@ import {
   totalComponents,
 } from '../../compendiums/signatureGear';
 import { d6, rollRange } from '../../utils/dice';
-import type { Character } from '../types';
+import { uuid } from '../../utils/uuid';
+import { FACTIONS } from '../../compendiums/factions';
+import type { Campaign, Character } from '../types';
+import { adjacentTo, areAdjacent, getAllWorldNames } from '../../utils/worldAdjacency';
 
 type ComponentKey = 'coil' | 'disc' | 'lens' | 'gem';
 
@@ -336,6 +341,7 @@ export default function CharacterPage() {
 
       {showCreate ? (
         <CreateCharacterModal
+          campaign={campaign}
           initial={ch}
           onClose={() => setShowCreate(false)}
           onConfirm={(nextChar, nextResources) => {
@@ -415,10 +421,12 @@ export default function CharacterPage() {
 }
 
 function CreateCharacterModal({
+  campaign,
   initial,
   onClose,
   onConfirm,
 }: {
+  campaign: Campaign;
   initial: Character;
   onClose: () => void;
   onConfirm: (c: Character, resources: any) => void;
@@ -459,7 +467,8 @@ function CreateCharacterModal({
   const [look2, setLook2] = useState('');
   const [look3, setLook3] = useState('');
 
-  const [traits, setTraits] = useState<string[]>(initial.traits ?? []);
+  // Solo Blaster: choose only ONE starting trait.
+  const [trait, setTrait] = useState<string>(initial.traits?.[0] ?? '');
   const [autod1, setAutod1] = useState(initial.autodidact?.[0] ?? '');
   const [autod2, setAutod2] = useState(initial.autodidact?.[1] ?? '');
 
@@ -471,13 +480,66 @@ function CreateCharacterModal({
   const [deckGraphic, setDeckGraphic] = useState(initial.hoverboard?.deckGraphic ?? '');
   const [boardType, setBoardType] = useState(initial.hoverboard?.boardType ?? '');
 
-  const [otherGear, setOtherGear] = useState<string[]>([]);
+  // Solo Blaster: choose only TWO starting other gear items.
+  const [otherGear, setOtherGear] = useState<string[]>(initial.otherGear ?? []);
   const [showSig, setShowSig] = useState(false);
   const [signatureGear, setSignatureGear] = useState<Character['signatureGear']>(initial.signatureGear);
 
   const toggleTrait = (t: string) => {
-    setTraits((prev) => (prev.includes(t) ? prev.filter((x) => x !== t) : [...prev, t]));
+    setTrait((prev) => (prev === t ? '' : t));
   };
+
+  const toggleOtherGear = (itemName: string) => {
+    setOtherGear((prev) => {
+      if (prev.includes(itemName)) return prev.filter((x) => x !== itemName);
+      if (prev.length >= 2) return prev; // max 2 at start
+      return [...prev, itemName];
+    });
+  };
+
+  // Hangouts (pick/roll) x2
+  const hangoutOptions = useMemo(() => {
+    const out = new Set<string>();
+    for (const r of HANGOUT_TABLE) {
+      out.add(r.left);
+      out.add(r.right);
+    }
+    return Array.from(out);
+  }, []);
+  const [hangout1, setHangout1] = useState(initial.hangouts?.[0] ?? '');
+  const [hangout2, setHangout2] = useState(initial.hangouts?.[1] ?? '');
+  const rollHangout = () => {
+    const v = rollD6Split(HANGOUT_TABLE);
+    if (!hangout1) setHangout1(v);
+    else if (!hangout2) setHangout2(v);
+    else setHangout1(v);
+  };
+
+  // Factions
+  const factionNames = useMemo(
+    () => Array.from(new Set(FACTIONS.map((f) => f.name))).sort((a, b) => a.localeCompare(b)),
+    []
+  );
+  const [fanFaction, setFanFaction] = useState(initial.factions?.fan ?? '');
+  const [annoyedFaction, setAnnoyedFaction] = useState(initial.factions?.annoyed ?? '');
+  const [familyFaction, setFamilyFaction] = useState(initial.factions?.family?.name ?? '');
+  const [familyRelation, setFamilyRelation] = useState<1 | -1>(initial.factions?.family?.relation ?? 1);
+
+  // Hook (free text or roll)
+  const [hook, setHook] = useState(initial.hook ?? '');
+  const rollHook = () => setHook(HOOK_PROMPTS[rollRange(0, HOOK_PROMPTS.length - 1)]);
+
+  // Map: choose 3 one-way portals between adjacent worlds (no rolls).
+  const allWorldNames = useMemo(() => getAllWorldNames(campaign), [campaign.worlds]);
+  const [startPortals, setStartPortals] = useState<Array<{ from: string; to: string }>>(() => {
+    const existing = Array.isArray(initial.portals) ? initial.portals : [];
+    const seeded = existing
+      .filter((p) => !p.twoWay)
+      .slice(0, 3)
+      .map((p) => ({ from: p.from, to: p.to }));
+    while (seeded.length < 3) seeded.push({ from: 'Null', to: '' });
+    return seeded;
+  });
 
   const rollFamily = () => {
     const row = FAMILY_TABLE[d6() - 1];
@@ -499,12 +561,21 @@ function CreateCharacterModal({
   const canConfirm = useMemo(() => {
     if (!name.trim()) return false;
     if (!family1.trim() || !family2.trim()) return false;
+    if (!trait.trim()) return false;
+    if (!rayA.trim() || !rayB.trim()) return false;
+    if (otherGear.length !== 2) return false;
+    if (!hangout1.trim() || !hangout2.trim()) return false;
+    if (hangout1.trim() === hangout2.trim()) return false;
+    if (!fanFaction.trim() || !annoyedFaction.trim() || !familyFaction.trim()) return false;
+    if (!hook.trim()) return false;
+    if (startPortals.some((p) => !p.from.trim() || !p.to.trim() || !areAdjacent(campaign, p.from, p.to))) return false;
     if (!signatureGear) return false;
     return true;
-  }, [name, family1, family2, signatureGear]);
+  }, [name, family1, family2, trait, rayA, rayB, otherGear.length, hangout1, hangout2, fanFaction, annoyedFaction, familyFaction, hook, startPortals, signatureGear, campaign]);
 
   const confirm = () => {
     const looks = [look1, look2, look3].filter(Boolean).slice(0, 3);
+    const nextPortals = startPortals.map((p) => ({ id: uuid(), from: p.from, to: p.to, twoWay: false }));
     const next: Character = {
       ...initial,
       created: true,
@@ -512,12 +583,20 @@ function CreateCharacterModal({
       name: name.trim(),
       family: [family1.trim(), family2.trim()],
       look: looks.join(', '),
-      traits,
-      autodidact: traits.includes('Autodidact') ? [autod1.trim(), autod2.trim()] : ['', ''],
+      traits: trait.trim() ? [trait.trim()] : [],
+      autodidact: trait.trim() === 'Autodidact' ? [autod1.trim(), autod2.trim()] : ['', ''],
       raygun: { a: rayA, b: rayB },
       hoverboard: { gripColor, gripCut, deckGraphic, boardType },
       otherGear,
       signatureGear,
+      hangouts: [hangout1.trim(), hangout2.trim()],
+      factions: {
+        fan: fanFaction.trim(),
+        annoyed: annoyedFaction.trim(),
+        family: { name: familyFaction.trim(), relation: familyRelation },
+      },
+      portals: nextPortals,
+      hook: hook.trim(),
     };
 
     const nextResources = {
@@ -607,9 +686,10 @@ function CreateCharacterModal({
 
           <div>
             <div className="fieldLabel">Traits</div>
+            <div className="muted small" style={{ marginBottom: 6 }}>Pick exactly one starting Trait.</div>
             <div style={{ display: 'grid', gap: 8 }}>
               {LONER_TRAITS.map((t) => {
-                const selected = traits.includes(t.name);
+                const selected = trait === t.name;
                 return (
                   <div key={t.name} className="row" style={{ justifyContent: 'space-between', gap: 10 }}>
                     <button
@@ -626,7 +706,7 @@ function CreateCharacterModal({
                 );
               })}
             </div>
-            {traits.includes('Autodidact') ? (
+            {trait === 'Autodidact' ? (
               <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
                 <div className="fieldLabel">Autodidact fill-ins</div>
                 <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
@@ -718,17 +798,15 @@ function CreateCharacterModal({
 
           <div>
             <div className="fieldLabel">Other gear (starting options)</div>
+            <div className="muted small" style={{ marginBottom: 6 }}>Pick exactly two.</div>
             <div style={{ display: 'grid', gap: 6 }}>
               {starterOtherGear.map((g) => (
                 <label key={g.id} className="row" style={{ gap: 8, alignItems: 'center' }}>
                   <input
                     type="checkbox"
                     checked={otherGear.includes(g.name)}
-                    onChange={() =>
-                      setOtherGear((prev) =>
-                        prev.includes(g.name) ? prev.filter((x) => x !== g.name) : [...prev, g.name]
-                      )
-                    }
+                    disabled={!otherGear.includes(g.name) && otherGear.length >= 2}
+                    onChange={() => toggleOtherGear(g.name)}
                   />
                   <span style={{ fontWeight: 700 }}>{g.name}</span>
                 </label>
@@ -751,6 +829,139 @@ function CreateCharacterModal({
             <button className="btn" style={{ marginTop: 8 }} onClick={() => setShowSig(true)} type="button">
               Add Signature Gear
             </button>
+          </div>
+
+          <div>
+            <div className="fieldLabel">Hangout (pick/roll) x2</div>
+            <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+              <select className="select" value={hangout1} onChange={(e) => setHangout1(e.target.value)}>
+                <option value="">—</option>
+                {hangoutOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              <select className="select" value={hangout2} onChange={(e) => setHangout2(e.target.value)}>
+                <option value="">—</option>
+                {hangoutOptions.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              <button className="btn btnGhost" type="button" onClick={rollHangout}>Random</button>
+            </div>
+            {hangout1 && hangout2 && hangout1 === hangout2 ? (
+              <div className="muted small" style={{ marginTop: 6 }}>Pick two different hangouts.</div>
+            ) : null}
+          </div>
+
+          <div>
+            <div className="fieldLabel">Factions</div>
+            <div className="muted small">Fan (+1), Annoyed (-1), Your Family is part of (+1 or -1)</div>
+            <div style={{ display: 'grid', gap: 10, marginTop: 8 }}>
+              <div>
+                <div className="fieldLabel">Fan (+1)</div>
+                <select className="select" value={fanFaction} onChange={(e) => setFanFaction(e.target.value)}>
+                  <option value="">—</option>
+                  {factionNames.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="fieldLabel">Annoyed (-1)</div>
+                <select className="select" value={annoyedFaction} onChange={(e) => setAnnoyedFaction(e.target.value)}>
+                  <option value="">—</option>
+                  {factionNames.map((o) => (
+                    <option key={o} value={o}>{o}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <div className="fieldLabel">Your Family is part of</div>
+                <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap' }}>
+                  <select className="select" value={familyFaction} onChange={(e) => setFamilyFaction(e.target.value)}>
+                    <option value="">—</option>
+                    {factionNames.map((o) => (
+                      <option key={o} value={o}>{o}</option>
+                    ))}
+                  </select>
+                  <select
+                    className="select"
+                    value={String(familyRelation)}
+                    onChange={(e) => setFamilyRelation((e.target.value === '-1' ? -1 : 1) as 1 | -1)}
+                  >
+                    <option value="1">+1</option>
+                    <option value="-1">-1</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <div className="fieldLabel">Map</div>
+            <div className="muted small" style={{ marginBottom: 6 }}>
+              Draw 3 one-way portals between adjacent worlds (no roll).
+            </div>
+            <div style={{ display: 'grid', gap: 10 }}>
+              {startPortals.map((p, idx) => {
+                const toOpts = p.from ? adjacentTo(campaign, p.from) : [];
+                const ok = p.from && p.to && areAdjacent(campaign, p.from, p.to);
+                return (
+                  <div key={idx} className="row" style={{ gap: 8, flexWrap: 'wrap', alignItems: 'flex-end' }}>
+                    <div style={{ minWidth: 220, flex: 1 }}>
+                      <div className="fieldLabel">From</div>
+                      <select
+                        className="select"
+                        value={p.from}
+                        onChange={(e) => {
+                          const from = e.target.value;
+                          setStartPortals((prev) => {
+                            const next = [...prev];
+                            next[idx] = { from, to: '' };
+                            return next;
+                          });
+                        }}
+                      >
+                        <option value="">—</option>
+                        {allWorldNames.map((w) => (
+                          <option key={w} value={w}>{w}</option>
+                        ))}
+                      </select>
+                    </div>
+                    <div style={{ minWidth: 220, flex: 1 }}>
+                      <div className="fieldLabel">To (adjacent)</div>
+                      <select
+                        className="select"
+                        value={p.to}
+                        onChange={(e) => {
+                          const to = e.target.value;
+                          setStartPortals((prev) => {
+                            const next = [...prev];
+                            next[idx] = { ...next[idx], to };
+                            return next;
+                          });
+                        }}
+                      >
+                        <option value="">—</option>
+                        {toOpts.map((w) => (
+                          <option key={w} value={w}>{w}</option>
+                        ))}
+                      </select>
+                    </div>
+                    {!ok ? <span className="muted small">Adjacency required</span> : null}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+
+          <div>
+            <div className="fieldLabel">Hook</div>
+            <div className="muted small">Pick freely or roll.</div>
+            <div className="row" style={{ gap: 8, alignItems: 'flex-end', flexWrap: 'wrap', marginTop: 8 }}>
+              <textarea className="textarea" value={hook} onChange={(e) => setHook(e.target.value)} />
+              <button className="btn btnGhost" type="button" onClick={rollHook}>Random</button>
+            </div>
           </div>
         </div>
 
