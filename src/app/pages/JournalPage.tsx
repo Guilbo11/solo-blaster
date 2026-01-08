@@ -1,58 +1,128 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useActiveCampaign } from '../../storage/useActiveCampaign';
 import { campaignActions } from '../../storage/useCampaignStore';
+import { JournalChapter } from '../types';
+import { uuid } from '../../utils/uuid';
 
 function clampHtml(html: string) {
   return typeof html === 'string' ? html : '';
 }
 
+function mergeChaptersToLegacyHtml(chapters: JournalChapter[]) {
+  // Keeps old builds safe by maintaining journalHtml.
+  return chapters
+    .map((ch) => {
+      const title = ch.title?.trim() ? ch.title.trim() : 'Chapter';
+      return `<h2>${escapeHtml(title)}</h2>${ch.html || ''}`;
+    })
+    .join('<br/>');
+}
+
+function escapeHtml(s: string) {
+  return s
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+type EditorRefs = Record<string, HTMLDivElement | null>;
+
 export default function JournalPage() {
   const campaign = useActiveCampaign();
-  const editorRef = useRef<HTMLDivElement | null>(null);
-  const [draftHtml, setDraftHtml] = useState<string>('');
-
   const campaignId = campaign?.id;
   const isLocked = Boolean(campaign?.locked);
 
-  const storedHtml = useMemo(() => clampHtml(campaign?.journalHtml ?? ''), [campaign?.journalHtml]);
+  const storedChapters = useMemo(() => {
+    const raw = Array.isArray(campaign?.journalChapters) ? campaign!.journalChapters! : [];
+    if (raw.length) return raw;
+    // Back-compat: migrate from legacy journalHtml.
+    const legacy = clampHtml(campaign?.journalHtml ?? '');
+    const now = Date.now();
+    return [{ id: uuid(), title: 'Journal', html: legacy, createdAt: now, updatedAt: now } satisfies JournalChapter];
+  }, [campaign?.journalChapters, campaign?.journalHtml]);
 
+  // Local UI state (collapsed by default).
+  const [open, setOpen] = useState<Record<string, boolean>>({});
+  const [activeChapterId, setActiveChapterId] = useState<string | null>(null);
+  const editorRefs = useRef<EditorRefs>({});
+
+  // Keep open state reset when campaign changes.
   useEffect(() => {
-    setDraftHtml(storedHtml);
-    if (editorRef.current) {
-      editorRef.current.innerHTML = storedHtml;
-    }
-  }, [storedHtml, campaignId]);
+    const next: Record<string, boolean> = {};
+    for (const ch of storedChapters) next[ch.id] = false;
+    setOpen(next);
+    setActiveChapterId(storedChapters[0]?.id ?? null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [campaignId]);
+
+  const setEditorRef = (id: string, node: HTMLDivElement | null) => {
+    editorRefs.current[id] = node;
+  };
+
+  const persist = (chapters: JournalChapter[]) => {
+    if (!campaignId) return;
+    const now = Date.now();
+    campaignActions.updateCampaign(campaignId, (c) => ({
+      ...c,
+      updatedAt: now,
+      journalChapters: chapters,
+      journalHtml: mergeChaptersToLegacyHtml(chapters),
+    }));
+  };
+
+  const updateChapter = (id: string, patch: Partial<JournalChapter>) => {
+    const now = Date.now();
+    const next = storedChapters.map((ch) => (ch.id === id ? { ...ch, ...patch, updatedAt: now } : ch));
+    persist(next);
+  };
+
+  const addChapter = () => {
+    if (!campaignId || isLocked) return;
+    const title = (prompt('Chapter title?') ?? '').trim() || `Chapter ${storedChapters.length + 1}`;
+    const now = Date.now();
+    const next: JournalChapter[] = [
+      { id: uuid(), title, html: '', createdAt: now, updatedAt: now } satisfies JournalChapter,
+      ...storedChapters,
+    ];
+    persist(next);
+    setOpen((prev) => ({ ...prev, [next[0].id]: true }));
+    setActiveChapterId(next[0].id);
+    // Focus editor on next tick.
+    setTimeout(() => editorRefs.current[next[0].id]?.focus(), 0);
+  };
+
+  const deleteChapter = (id: string) => {
+    if (isLocked) return;
+    if (!confirm('Delete this chapter?')) return;
+    const next = storedChapters.filter((ch) => ch.id !== id);
+    persist(next.length ? next : [{ id: uuid(), title: 'Journal', html: '', createdAt: Date.now(), updatedAt: Date.now() }]);
+  };
+
+  const moveChapter = (id: string, dir: -1 | 1) => {
+    if (isLocked) return;
+    const idx = storedChapters.findIndex((c) => c.id === id);
+    if (idx < 0) return;
+    const swap = idx + dir;
+    if (swap < 0 || swap >= storedChapters.length) return;
+    const next = [...storedChapters];
+    const tmp = next[idx];
+    next[idx] = next[swap];
+    next[swap] = tmp;
+    persist(next);
+  };
 
   const exec = (cmd: string, value?: string) => {
     try {
       document.execCommand(cmd, false, value);
-      if (editorRef.current) setDraftHtml(editorRef.current.innerHTML);
     } catch {
       // ignore
     }
   };
 
-  const setBlock = (kind: 'P' | 'H1' | 'H2' | 'H3') => exec('formatBlock', kind);
-
-  const insertChapter = () => {
-    const title = prompt('Chapter title? (optional)') ?? '';
-    const stamp = new Date().toLocaleString();
-    const text = title.trim() ? `${title.trim()} — ${stamp}` : `Chapter — ${stamp}`;
-    try {
-      // Insert as a header then a blank line.
-      exec('formatBlock', 'H2');
-      exec('insertText', text);
-      exec('formatBlock', 'P');
-      exec('insertHTML', '<br/>');
-    } catch {
-      // no-op
-    }
-  };
-
-  const save = () => {
-    if (!campaignId) return;
-    const html = editorRef.current ? editorRef.current.innerHTML : draftHtml;
-    campaignActions.updateCampaign(campaignId, (c) => ({ ...c, updatedAt: Date.now(), journalHtml: html }));
+  const onAnyEditorInput = (id: string) => {
+    const node = editorRefs.current[id];
+    if (!node) return;
+    updateChapter(id, { html: node.innerHTML });
   };
 
   // Allow other parts of the app to append formatted HTML to the journal.
@@ -64,32 +134,19 @@ export default function JournalPage() {
       const html = String(detail?.html ?? '');
       if (!html.trim()) return;
 
-      // Update editor UI if on this tab.
-      if (editorRef.current) {
-        const isFocused = document.activeElement === editorRef.current;
-        if (isFocused) {
-          try {
-            document.execCommand('insertHTML', false, `<br/>${html}`);
-          } catch {
-            editorRef.current.innerHTML = (editorRef.current.innerHTML || '') + `<br/>${html}`;
-          }
-        } else {
-          editorRef.current.innerHTML = (editorRef.current.innerHTML || '') + `<br/>${html}`;
-        }
-        setDraftHtml(editorRef.current.innerHTML);
+      const targetId = activeChapterId ?? storedChapters[0]?.id;
+      if (!targetId) return;
+      const node = editorRefs.current[targetId];
+      if (node) {
+        node.innerHTML = (node.innerHTML || '') + `<br/>${html}`;
       }
-
-      // Persist.
-      campaignActions.updateCampaign(campaignId, (c) => ({
-        ...c,
-        updatedAt: Date.now(),
-        journalHtml: (c.journalHtml || '') + `<br/>${html}`,
-      }));
+      const next = storedChapters.map((ch) => (ch.id === targetId ? { ...ch, html: (ch.html || '') + `<br/>${html}`, updatedAt: Date.now() } : ch));
+      persist(next);
     };
 
     window.addEventListener('solo:journal-insert-html', onInsert as any);
     return () => window.removeEventListener('solo:journal-insert-html', onInsert as any);
-  }, [campaignId]);
+  }, [campaignId, activeChapterId, storedChapters]);
 
   if (!campaign) return <div className="page"><p className="muted">No active campaign.</p></div>;
 
@@ -97,52 +154,84 @@ export default function JournalPage() {
     <div className="page">
       <header className="pageHeader">
         <h1>Journal</h1>
-        <p className="muted">Rich notes per campaign. Rolls and oracles can be appended automatically.</p>
+        <p className="muted">Chapters are collapsed by default. Rolls and oracles can be appended automatically.</p>
       </header>
 
       <section className="card">
-        <div className="toolbar">
-          <button className="toolBtn" onClick={() => exec('bold')} disabled={isLocked}><strong>B</strong></button>
-          <button className="toolBtn" onClick={() => exec('italic')} disabled={isLocked}><em>I</em></button>
-          <button className="toolBtn" onClick={() => exec('underline')} disabled={isLocked}><u>U</u></button>
-          <span className="toolSep" />
-          <button className="toolBtn" onClick={() => setBlock('H1')} disabled={isLocked}>H1</button>
-          <button className="toolBtn" onClick={() => setBlock('H2')} disabled={isLocked}>H2</button>
-          <button className="toolBtn" onClick={() => setBlock('P')} disabled={isLocked}>P</button>
-          <span className="toolSep" />
-          <button className="toolBtn" onClick={insertChapter} disabled={isLocked}>+ Chapter</button>
-          <span className="toolSep" />
-          <button className="toolBtn" onClick={() => exec('insertUnorderedList')} disabled={isLocked}>• List</button>
-          <button className="toolBtn" onClick={() => exec('insertOrderedList')} disabled={isLocked}>1. List</button>
-          <button className="toolBtn" onClick={() => exec('formatBlock', 'blockquote')} disabled={isLocked}>❝</button>
-          <span className="toolSep" />
-          <button
-            className="toolBtn"
-            onClick={() => {
-              const url = prompt('Link URL?');
-              if (!url) return;
-              exec('createLink', url);
-            }}
-            disabled={isLocked}
-          >
-            🔗
-          </button>
-          <span style={{ flex: 1 }} />
-          <button className="btnSecondary" onClick={save} disabled={isLocked}>Save</button>
+        <div className="row" style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
+            <button className="toolBtn" onClick={() => exec('bold')} disabled={isLocked}><strong>B</strong></button>
+            <button className="toolBtn" onClick={() => exec('italic')} disabled={isLocked}><em>I</em></button>
+            <button className="toolBtn" onClick={() => exec('underline')} disabled={isLocked}><u>U</u></button>
+            <span className="toolSep" />
+            <button className="toolBtn" onClick={() => exec('formatBlock', 'H2')} disabled={isLocked}>H2</button>
+            <button className="toolBtn" onClick={() => exec('formatBlock', 'P')} disabled={isLocked}>P</button>
+            <span className="toolSep" />
+            <button className="toolBtn" onClick={() => exec('insertUnorderedList')} disabled={isLocked}>• List</button>
+            <button className="toolBtn" onClick={() => exec('insertOrderedList')} disabled={isLocked}>1. List</button>
+            <button
+              className="toolBtn"
+              onClick={() => {
+                const url = prompt('Link URL?');
+                if (!url) return;
+                exec('createLink', url);
+              }}
+              disabled={isLocked}
+            >
+              🔗
+            </button>
+          </div>
+
+          <button className="btn" onClick={addChapter} disabled={isLocked}>+ Chapter</button>
         </div>
 
-        <div
-          ref={editorRef}
-          className="journalEditor"
-          contentEditable={!isLocked}
-          suppressContentEditableWarning
-          onInput={() => {
-            if (editorRef.current) setDraftHtml(editorRef.current.innerHTML);
-          }}
-          onBlur={save}
-        />
+        <div style={{ display: 'grid', gap: 10, marginTop: 12 }}>
+          {storedChapters.map((ch, idx) => {
+            const isOpen = Boolean(open[ch.id]);
+            return (
+              <div key={ch.id} className="subcard">
+                <div
+                  className="row"
+                  style={{ justifyContent: 'space-between', alignItems: 'center', gap: 10, cursor: 'pointer' }}
+                  onClick={() => setOpen((prev) => ({ ...prev, [ch.id]: !prev[ch.id] }))}
+                >
+                  <div className="row" style={{ gap: 10, alignItems: 'center', flex: 1 }}>
+                    <span className="muted" style={{ minWidth: 18 }}>{isOpen ? '▾' : '▸'}</span>
+                    <input
+                      className="input"
+                      value={ch.title}
+                      onChange={(e) => updateChapter(ch.id, { title: e.target.value })}
+                      onClick={(e) => e.stopPropagation()}
+                      disabled={isLocked}
+                      style={{ fontWeight: 800 }}
+                    />
+                  </div>
+                  <div className="row" style={{ gap: 6 }} onClick={(e) => e.stopPropagation()}>
+                    <button className="btnSecondary" type="button" onClick={() => moveChapter(ch.id, -1)} disabled={isLocked || idx === 0} title="Move up">↑</button>
+                    <button className="btnSecondary" type="button" onClick={() => moveChapter(ch.id, 1)} disabled={isLocked || idx === storedChapters.length - 1} title="Move down">↓</button>
+                    <button className="btnSecondary" type="button" onClick={() => deleteChapter(ch.id)} disabled={isLocked} title="Delete">🗑️</button>
+                  </div>
+                </div>
 
-        {isLocked ? <p className="muted small" style={{ marginTop: 8 }}>Campaign is locked. Journal is read-only.</p> : null}
+                {isOpen ? (
+                  <div style={{ marginTop: 10 }}>
+                    <div
+                      ref={(node) => setEditorRef(ch.id, node)}
+                      className="journalEditor"
+                      contentEditable={!isLocked}
+                      suppressContentEditableWarning
+                      onFocus={() => setActiveChapterId(ch.id)}
+                      onInput={() => onAnyEditorInput(ch.id)}
+                      onBlur={() => onAnyEditorInput(ch.id)}
+                      dangerouslySetInnerHTML={{ __html: ch.html || '' }}
+                    />
+                    {isLocked ? <p className="muted small" style={{ marginTop: 8 }}>Campaign is locked. Journal is read-only.</p> : null}
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
+        </div>
       </section>
     </div>
   );

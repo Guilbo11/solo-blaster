@@ -1,5 +1,5 @@
 import { useSyncExternalStore } from 'react';
-import { Campaign, Resources } from '../app/types';
+import { Campaign, JournalChapter, Resources } from '../app/types';
 import { uuid } from '../utils/uuid';
 
 const STORAGE_KEY = 'solo-blaster:v1';
@@ -37,6 +37,9 @@ function makeCampaign(name: string): Campaign {
     resources: defaultResources(),
     run: { isActive: false, disasterRolled: false, tracks: [] },
     journalHtml: '',
+    journalChapters: [
+      { id: uuid(), title: 'Journal', html: '', createdAt: now, updatedAt: now } satisfies JournalChapter,
+    ],
     journal: [],
     epilogue: { legacies: [], dooms: [] },
     npcs: [],
@@ -135,6 +138,51 @@ function normalizeCampaign(c: any): Campaign {
   resources.doom = epilogue.dooms.length || resources.doom || 0;
   resources.legacy = epilogue.legacies.length || resources.legacy || 0;
 
+  const legacyHtml = typeof c?.journalHtml === 'string' ? c.journalHtml : '';
+  const rawChapters = Array.isArray(c?.journalChapters) ? c.journalChapters : null;
+  let journalChapters: JournalChapter[];
+  if (rawChapters && rawChapters.length) {
+    journalChapters = rawChapters
+      .filter(Boolean)
+      .map((ch: any) => {
+        const createdAt = typeof ch?.createdAt === 'number' ? ch.createdAt : now;
+        const updatedAt = typeof ch?.updatedAt === 'number' ? ch.updatedAt : createdAt;
+        return {
+          id: ch?.id ?? uuid(),
+          title: typeof ch?.title === 'string' && ch.title.trim() ? ch.title : 'Chapter',
+          html: typeof ch?.html === 'string' ? ch.html : '',
+          createdAt,
+          updatedAt,
+        } satisfies JournalChapter;
+      });
+  } else {
+    // Migrate from legacy journalHtml.
+    journalChapters = [
+      { id: uuid(), title: 'Journal', html: legacyHtml, createdAt: now, updatedAt: now } satisfies JournalChapter,
+    ];
+  }
+
+  const rawNpcs = Array.isArray(c?.npcs) ? c.npcs : [];
+  const npcs = rawNpcs
+    .filter(Boolean)
+    .map((n: any) => {
+      // Back-compat: older NPCs only had name/notes.
+      const createdAt = typeof n?.createdAt === 'number' ? n.createdAt : now;
+      const updatedAt = typeof n?.updatedAt === 'number' ? n.updatedAt : createdAt;
+      return {
+        id: n?.id ?? uuid(),
+        kind: n?.kind === 'extraterrestrial' ? 'extraterrestrial' : 'terrestrial',
+        name: typeof n?.name === 'string' ? n.name : 'NPC',
+        location: typeof n?.location === 'string' ? n.location : '',
+        wants: typeof n?.wants === 'string' ? n.wants : '',
+        likes: typeof n?.likes === 'string' ? n.likes : '',
+        dislikes: typeof n?.dislikes === 'string' ? n.dislikes : '',
+        notes: typeof n?.notes === 'string' ? n.notes : '',
+        createdAt,
+        updatedAt,
+      };
+    });
+
   return {
     id: c?.id ?? uuid(),
     name: c?.name ?? 'Campaign',
@@ -144,10 +192,11 @@ function normalizeCampaign(c: any): Campaign {
     character,
     resources,
     run,
-    journalHtml: typeof c?.journalHtml === 'string' ? c.journalHtml : '',
+    journalHtml: legacyHtml,
+    journalChapters,
     journal: Array.isArray(c?.journal) ? c.journal : [],
     epilogue,
-    npcs: Array.isArray(c?.npcs) ? c.npcs : [],
+    npcs,
     worlds: Array.isArray(c?.worlds) ? c.worlds : [],
   };
 }

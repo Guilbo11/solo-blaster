@@ -106,7 +106,9 @@ function CreateWorldModal(props: {
 }) {
   const { campaignId, locked, existingWorldNames, onClose } = props;
   const [name, setName] = useState('');
-  const [colours, setColours] = useState<string[]>(rollWorldColours());
+  const initialColours = rollWorldColours();
+  const [colour1, setColour1] = useState<string>(initialColours?.[0] ?? '');
+  const [colour2, setColour2] = useState<string>(initialColours?.[1] ?? '');
   const [landscape, setLandscape] = useState<string>(rollWorldLandscape());
   const [ruins, setRuins] = useState(() => {
     const r = rollWorldRuins();
@@ -127,6 +129,7 @@ function CreateWorldModal(props: {
     if (locked) return;
     const worldName = name.trim() || 'Unnamed World';
     const cleanedAdj = Array.from(new Set(adj)).filter((x) => x !== worldName);
+    const colours = [colour1, colour2].map((c) => c.trim()).filter(Boolean);
     const w = makeWorldFromRolls({
       name: worldName,
       colours,
@@ -159,24 +162,80 @@ function CreateWorldModal(props: {
 
         <div className="card" style={{ marginTop: 12 }}>
           <div className="h3">World maker</div>
-          <div className="row" style={{ gap: 10, marginTop: 8, flexWrap: 'wrap' }}>
-            <button className="btnSecondary" onClick={() => setColours(rollWorldColours())}>Roll colours</button>
-            <button className="btnSecondary" onClick={() => setLandscape(rollWorldLandscape())}>Roll landscape</button>
-            <button className="btnSecondary" onClick={() => {
-              const r = rollWorldRuins();
-              setRuins(`${r.value} (d66 ${r.roll})`);
-            }}>Roll ruins</button>
-            <button className="btnSecondary" onClick={() => {
-              const r = rollWorldTwist();
-              setTwist(`${r.value} (d66 ${r.roll})`);
-            }}>Roll twist</button>
+          <div style={{ marginTop: 10 }}>
+            <div className="fieldLabel">Colours</div>
+            <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input
+                className="input"
+                value={colour1}
+                onChange={(e) => setColour1(e.target.value)}
+                placeholder="Colour 1"
+              />
+              <span className="muted">—</span>
+              <input
+                className="input"
+                value={colour2}
+                onChange={(e) => setColour2(e.target.value)}
+                placeholder="Colour 2"
+              />
+              <span className="muted">—</span>
+              <button
+                className="btnSecondary"
+                onClick={() => {
+                  const c = rollWorldColours();
+                  setColour1(c?.[0] ?? '');
+                  setColour2(c?.[1] ?? '');
+                }}
+                type="button"
+              >
+                Roll
+              </button>
+            </div>
           </div>
 
-          <div className="muted" style={{ marginTop: 10 }}>
-            <div><strong>Colours:</strong> {colours.join(', ')}</div>
-            <div><strong>Landscape:</strong> {landscape}</div>
-            <div><strong>Ruins:</strong> {ruins}</div>
-            <div><strong>Twist:</strong> {twist}</div>
+          <div style={{ marginTop: 10 }}>
+            <div className="fieldLabel">Landscape</div>
+            <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="input" value={landscape} onChange={(e) => setLandscape(e.target.value)} />
+              <span className="muted">—</span>
+              <button className="btnSecondary" onClick={() => setLandscape(rollWorldLandscape())} type="button">Roll</button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 10 }}>
+            <div className="fieldLabel">Ruins</div>
+            <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="input" value={ruins} onChange={(e) => setRuins(e.target.value)} />
+              <span className="muted">—</span>
+              <button
+                className="btnSecondary"
+                onClick={() => {
+                  const r = rollWorldRuins();
+                  setRuins(`${r.value} (d66 ${r.roll})`);
+                }}
+                type="button"
+              >
+                Roll
+              </button>
+            </div>
+          </div>
+
+          <div style={{ marginTop: 10 }}>
+            <div className="fieldLabel">Twist</div>
+            <div className="row" style={{ gap: 10, alignItems: 'center', flexWrap: 'wrap' }}>
+              <input className="input" value={twist} onChange={(e) => setTwist(e.target.value)} />
+              <span className="muted">—</span>
+              <button
+                className="btnSecondary"
+                onClick={() => {
+                  const r = rollWorldTwist();
+                  setTwist(`${r.value} (d66 ${r.roll})`);
+                }}
+                type="button"
+              >
+                Roll
+              </button>
+            </div>
           </div>
         </div>
 

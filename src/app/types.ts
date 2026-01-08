@@ -21,6 +21,15 @@ export interface JournalEntry {
   data?: Record<string, unknown>;
 }
 
+export interface JournalChapter {
+  id: UUID;
+  title: string;
+  /** Rich HTML content for the chapter (same format as legacy journalHtml). */
+  html: string;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface PortalLink {
   id: UUID;
   from: string;
@@ -147,11 +156,25 @@ export interface Campaign {
   run: RunState;
   // Rich journal HTML (TOR-style) + legacy list kept for backwards compat.
   journalHtml?: string;
+  /** Chapter-based journal. If missing, it can be derived from journalHtml. */
+  journalChapters?: JournalChapter[];
   journal: JournalEntry[];
   epilogue?: EpilogueState;
 
-  /** Simple NPC list for the campaign (Solo Blaster: section 6 Tables/Tools). */
-  npcs?: { id: UUID; name: string; notes: string; createdAt: number }[];
+  /** NPC list for the campaign (Solo Blaster: section 6 Tables/Tools). */
+  npcs?: {
+    id: UUID;
+    kind: 'terrestrial' | 'extraterrestrial';
+    name: string;
+    /** Name of a world (canon or custom). */
+    location: string;
+    wants: string;
+    likes: string;
+    dislikes: string;
+    notes: string;
+    createdAt: number;
+    updatedAt: number;
+  }[];
 
   /** Worlds compendium for the campaign: canon worlds are implicit; custom worlds live here. */
   worlds?: World[];

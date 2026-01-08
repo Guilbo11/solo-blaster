@@ -13,6 +13,7 @@ import BottomNav from '../components/BottomNav';
 import ResourceBar from '../components/ResourceBar';
 import FloatingActions from '../components/FloatingActions';
 import ToastHost from '../components/ToastHost';
+import ErrorBoundary from '../components/ErrorBoundary';
 
 export default function App() {
   const { activeCampaignId } = useCampaignStore();
@@ -35,7 +36,7 @@ export default function App() {
   return (
     <div className="appRoot">
       {showShell && (
-        <>
+        <ErrorBoundary>
           <ResourceBar />
           <FloatingActions />
           <div className="appBody">
@@ -59,14 +60,16 @@ export default function App() {
           </div>
           <BottomNav />
           <ToastHost />
-        </>
+        </ErrorBoundary>
       )}
 
       {!showShell && (
-        <Routes>
-          <Route path="/campaigns" element={<CampaignsPage />} />
-          <Route path="*" element={<Navigate to="/campaigns" replace />} />
-        </Routes>
+        <ErrorBoundary>
+          <Routes>
+            <Route path="/campaigns" element={<CampaignsPage />} />
+            <Route path="*" element={<Navigate to="/campaigns" replace />} />
+          </Routes>
+        </ErrorBoundary>
       )}
     </div>
   );
