@@ -217,7 +217,7 @@ body{
   opacity: 0.85;
 }
 .resourceBarLeft{ flex: 0 0 auto; }
-.resourceBarItems{ display:flex; gap: 8px; align-items: center; }
+.resourceBarItems{ display:flex; gap: 8px; align-items: center; flex-wrap: wrap; }
 .chip{
   border: 1px solid var(--line);
   border-radius: 999px;
@@ -262,6 +262,11 @@ body{
   justify-content: center;
   padding: 12px;
   z-index: 50;
+}
+
+/* Some modals (like the character creation wizard) should start at the top and scroll. */
+.modalBackdropTop{
+  align-items: flex-start;
 }
 .modal{
   width: min(520px, 100%);

@@ -34,6 +34,8 @@ export default function NPCsPage() {
   const [draftDislikes, setDraftDislikes] = useState('');
   const [draftNotes, setDraftNotes] = useState('');
 
+  const [showGenerator, setShowGenerator] = useState(false);
+
   const [editing, setEditing] = useState<Npc | null>(null);
 
   const npcs = (activeCampaign?.npcs ?? []) as any as Npc[];
@@ -92,6 +94,7 @@ export default function NPCsPage() {
       npcs: [npc, ...(c.npcs ?? [])],
     }));
     resetDraft();
+    setShowGenerator(false);
   };
 
   const updateNpc = (id: string, patch: Partial<Npc>) => {
@@ -115,15 +118,27 @@ export default function NPCsPage() {
 
   return (
     <div className="page">
-      <div className="pageHeader">
-        <h1>NPCs</h1>
-        <p className="muted">Campaign NPC list + a quick monster reference.</p>
+      <div className="pageHeader pageHeaderRow">
+        <div>
+          <h1>NPCs</h1>
+          <p className="muted">Campaign NPC list + a quick monster reference.</p>
+        </div>
+        <button className="btn" type="button" onClick={() => setShowGenerator(true)}>
+          Add NPC
+        </button>
       </div>
 
-      <section className="card">
-        <h2>NPC Generator</h2>
+      {showGenerator ? (
+        <div className="modalBackdrop modalBackdropTop">
+          <div className="modal modalTall" role="dialog" aria-modal="true" onClick={(e) => e.stopPropagation()}>
+            <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
+              <h2>NPC Generator</h2>
+              <button className="btn btnGhost" type="button" onClick={() => setShowGenerator(false)}>
+                Close
+              </button>
+            </div>
 
-        <div className="subcard" style={{ marginTop: 10 }}>
+            <div className="subcard" style={{ marginTop: 10 }}>
           <div className="row" style={{ gap: 10, flexWrap: 'wrap', alignItems: 'center' }}>
             <select className="input" value={draftKind} onChange={(e) => setDraftKind(e.target.value as NpcKind)} style={{ maxWidth: 220 }}>
               <option value="terrestrial">Terrestrial</option>
@@ -192,7 +207,13 @@ export default function NPCsPage() {
             </button>
           </div>
         </div>
+          </div>
+        </div>
+      ) : null}
 
+      <section className="card">
+        <h2>NPCs</h2>
+        <p className="muted">Click an NPC to expand details. Use “Add NPC” (top right) to open the generator.</p>
         {npcs.length === 0 ? (
           <p className="muted" style={{ marginTop: 12 }}>
             No NPCs yet.

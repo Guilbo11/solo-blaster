@@ -105,14 +105,24 @@ export const HANGOUT_TABLE: Array<{ left: string; right: string }> = [
   { left: 'the mall', right: 'the woods' },
 ];
 
-// v1 Raygun: compact list. You can replace with full A/B tables later.
-export const RAYGUN_TYPES = [
-  'Gravity Blaster',
-  'Reality Cannon',
-  'Laser Blaster',
-  'Entropy Sprayer',
-  'Matter Rewriter',
-  'Sonic Disruptor',
+// Raygun tables (Raygun section):
+// Step A and Step B are separate d6 tables with a 1–3 / 4–6 split.
+export const RAYGUN_STEP_A_TABLE: Array<{ left: string; right: string }> = [
+  { left: 'particle', right: 'maser' },
+  { left: 'proton', right: 'neutron' },
+  { left: 'laser', right: 'reality' },
+  { left: 'mass', right: 'feedback' },
+  { left: 'photon', right: 'danger' },
+  { left: 'gravity', right: 'zero' },
+];
+
+export const RAYGUN_STEP_B_TABLE: Array<{ left: string; right: string }> = [
+  { left: 'ray', right: 'bow' },
+  { left: 'beam', right: 'wave' },
+  { left: 'blaster', right: 'pistol' },
+  { left: 'visor', right: 'projector' },
+  { left: 'arc', right: 'cannon' },
+  { left: 'wand', right: 'glove' },
 ];
 
 // v1 Hooks: prompts; replace with full hook table from the PDF if desired.

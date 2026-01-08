@@ -8,7 +8,8 @@ import {
   GRIP_CUT_TABLE,
   LONER_TRAITS,
   LOOK_WORDS,
-  RAYGUN_TYPES,
+  RAYGUN_STEP_A_TABLE,
+  RAYGUN_STEP_B_TABLE,
 } from '../../tables/characterTables';
 import { OTHER_GEAR } from '../../compendiums/otherGear';
 import {
@@ -424,6 +425,24 @@ function CreateCharacterModal({
 }) {
   const starterOtherGear = useMemo(() => OTHER_GEAR.filter((g) => g.starting), []);
 
+  const raygunAOptions = useMemo(() => {
+    const out = new Set<string>();
+    for (const r of RAYGUN_STEP_A_TABLE) {
+      out.add(r.left);
+      out.add(r.right);
+    }
+    return Array.from(out);
+  }, []);
+
+  const raygunBOptions = useMemo(() => {
+    const out = new Set<string>();
+    for (const r of RAYGUN_STEP_B_TABLE) {
+      out.add(r.left);
+      out.add(r.right);
+    }
+    return Array.from(out);
+  }, []);
+
   const [name, setName] = useState(initial.name || 'Unnamed Loner');
   const familyOptions = useMemo(() => {
     const out = new Set<string>();
@@ -517,8 +536,8 @@ function CreateCharacterModal({
   };
 
   return (
-    <div className="modalBackdrop">
-      <div className="modal" role="dialog" aria-modal="true">
+    <div className="modalBackdrop modalBackdropTop">
+      <div className="modal modalTall" role="dialog" aria-modal="true">
         <div className="row" style={{ justifyContent: 'space-between', gap: 12 }}>
           <h2>Create character</h2>
           <button className="btn btnGhost" onClick={onClose}>
@@ -623,24 +642,24 @@ function CreateCharacterModal({
             <div className="row" style={{ gap: 8, flexWrap: 'wrap' }}>
               <select className="select" value={rayA} onChange={(e) => setRayA(e.target.value)}>
                 <option value="">A —</option>
-                {RAYGUN_TYPES.map((r) => (
+                {raygunAOptions.map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
                 ))}
               </select>
-              <button className="btn btnGhost" onClick={() => setRayA(RAYGUN_TYPES[d6() - 1])}>
+              <button className="btn btnGhost" onClick={() => setRayA(rollD6Split(RAYGUN_STEP_A_TABLE))}>
                 Random A
               </button>
               <select className="select" value={rayB} onChange={(e) => setRayB(e.target.value)}>
                 <option value="">B —</option>
-                {RAYGUN_TYPES.map((r) => (
+                {raygunBOptions.map((r) => (
                   <option key={r} value={r}>
                     {r}
                   </option>
                 ))}
               </select>
-              <button className="btn btnGhost" onClick={() => setRayB(RAYGUN_TYPES[d6() - 1])}>
+              <button className="btn btnGhost" onClick={() => setRayB(rollD6Split(RAYGUN_STEP_B_TABLE))}>
                 Random B
               </button>
             </div>

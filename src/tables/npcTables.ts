@@ -1,8 +1,7 @@
 import { FACTIONS } from '../compendiums/factions';
 
-// Note: the book has 200 terrestrial + 200 extraterrestrial names. To keep the repo
-// light while still meeting the "200/200" requirement, we generate deterministic
-// name pools from syllables at build time.
+// Note: the book has 200 terrestrial + 200 extraterrestrial names.
+// To keep the repo light, we generate deterministic pools.
 
 function buildNames(syllablesA: string[], syllablesB: string[], syllablesC: string[], count: number): string[] {
   const out: string[] = [];
@@ -18,21 +17,45 @@ function buildNames(syllablesA: string[], syllablesB: string[], syllablesC: stri
   return out;
 }
 
+function buildFullNames(first: string[], last: string[], count: number): string[] {
+  const out: string[] = [];
+  let i = 0;
+  while (out.length < count) {
+    const f = first[i % first.length];
+    const l = last[Math.floor(i / first.length) % last.length];
+    const name = `${f} ${l}`;
+    if (!out.includes(name)) out.push(name);
+    i++;
+  }
+  return out;
+}
+
 function cap(s: string) {
   return s ? s[0].toUpperCase() + s.slice(1) : s;
 }
 
-export const NAMES_TERRESTRIAL: string[] = buildNames(
-  ['al', 'ben', 'cam', 'dan', 'el', 'fin', 'gil', 'hal', 'ian', 'jo', 'kai', 'leo', 'max', 'neo', 'oli', 'pat', 'quin', 'ray', 'sam', 'tom'],
-  ['a', 'e', 'i', 'o', 'u', 'ae', 'ia', 'io', 'ou', 'ui'],
-  ['son', 'sen', 'man', 'lin', 'ley', 'ford', 'well', 'ton', 'mont', 'ridge'],
+// Terrestrial: real-world-style full names (avoid samey suffixes like "-son").
+export const NAMES_TERRESTRIAL: string[] = buildFullNames(
+  [
+    'Alex', 'Sam', 'Jordan', 'Taylor', 'Jamie', 'Casey', 'Morgan', 'Riley', 'Avery', 'Cameron',
+    'Dylan', 'Elliot', 'Noah', 'Maya', 'Lea', 'Zoé', 'Chloé', 'Emma', 'Lucas', 'Leo',
+    'Mila', 'Nina', 'Sofia', 'Mia', 'Owen', 'Ethan', 'Liam', 'Aria', 'Jules', 'Theo',
+    'Nora', 'Iris', 'Mason', 'Logan', 'Harper', 'Quinn', 'Parker', 'Rowan', 'Sasha', 'Robin',
+  ],
+  [
+    'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Miller', 'Davis', 'Garcia', 'Rodriguez', 'Wilson',
+    'Anderson', 'Thomas', 'Moore', 'Martin', 'Lee', 'Walker', 'Hall', 'Allen', 'Young', 'King',
+    'Wright', 'Scott', 'Green', 'Baker', 'Adams', 'Nelson', 'Carter', 'Mitchell', 'Perez', 'Roberts',
+    'Turner', 'Phillips', 'Campbell', 'Parker', 'Evans', 'Edwards', 'Collins', 'Stewart', 'Morris', 'Murphy',
+  ],
   200
 );
 
+// Extraterrestrial: pronounceable-ish alien names (vary endings; not all "-th").
 export const NAMES_EXTRATERRESTRIAL: string[] = buildNames(
   ['x', 'z', 'q', 'k', 'v', 't', 'r', 'n', 'm', 'l', 's', 'h', 'j', "y'", 'gh', 'kr', 'zx', 'qu', 'va', 'nu'],
   ['a', 'e', 'i', 'o', 'u', 'aa', 'ii', 'oo', 'uu', 'ae'],
-  ['th', 'x', 'k', 'q', 'n', 'm', 'r', 'z', "'l", "-9"],
+  ['x', 'k', 'q', 'n', 'm', 'r', 'z', "'l", "-9", 'th', 's', 'v'],
   200
 );
 
