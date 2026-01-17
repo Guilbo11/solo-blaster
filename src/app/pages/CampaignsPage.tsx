@@ -95,7 +95,7 @@ export default function CampaignsPage() {
                   </div>
                   <div className="muted small">
                     Legacy {c.resources.legacy} · Doom {c.resources.doom} · Last played{' '}
-                    {new Date(c.updatedAt).toLocaleString()}
+                    {new Date(c.updatedAt).toLocaleDateString()}
                   </div>
                 </div>
                 <div className="listItemActions">
